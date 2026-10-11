@@ -22,7 +22,8 @@ input,select,textarea{min-width:0;font-size:16px}
 pre,code{white-space:pre-wrap;overflow-wrap:anywhere}
 #ptr{position:fixed;top:8px;left:50%;transform:translate(-50%,0);opacity:0;background:#111;color:#fff;padding:6px 14px;border-radius:16px;font-size:13px;z-index:15;pointer-events:none}
 body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;padding-bottom:84px}
-header{padding:18px 16px 6px;font-weight:700;font-size:18px}
+header{padding:18px 16px 6px;font-weight:700;font-size:18px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+#hhsw select,#hhsw span{font-size:14px;font-weight:600;padding:5px 10px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--text);width:auto;margin:0}
 main{padding:8px 16px;max-width:560px;margin:0 auto}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:10px 0}
 .hero{background:var(--pri);color:var(--priText);border-radius:16px;padding:18px;margin:10px 0}
@@ -77,7 +78,7 @@ details{margin-top:8px}summary{color:var(--pri);font-size:14px}
 </style>
 </head>
 <body>
-<header>💳 실적맞춤카드지갑</header>
+<header><span>💳 실적맞춤카드지갑</span><span id="hhsw"></span></header>
 <main id="view"><div class="card sub">불러오는 중…</div></main>
 <nav>
   <button data-t="home" onclick="go('home')">홈</button>
@@ -95,6 +96,7 @@ window.addEventListener('unhandledrejection', function (e) { var v = document.ge
 setTimeout(function () { var v = document.getElementById('view'); if (v && /불러오는 중/.test(v.textContent)) v.innerHTML = '<div class="card"><h3>응답이 없어요</h3><p class="sub">15초가 지나도 데이터가 오지 않았어요. 웹앱 주소와 Apps Script 배포를 확인하세요.</p></div>'; }, 15000);
 </script>
 <script>
+var HHSEL = ''; try { HHSEL = localStorage.getItem('sjc_hh') || ''; } catch (e) {}
 var SESSION = ''; try { SESSION = localStorage.getItem('sjc_sess') || ''; } catch (e) {}
 var IS_MOBILE = /iPhone|iPad|iPod|Android|Mobile/i.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
 var API_URL = 'https://script.google.com/macros/s/AKfycbxfK_E_CrpgGJT7Ab_jxAXKoSmhGvOVFhUuSOJl0X5jbfdYl-z_Qjm1xTMOvGqVl6jrCA/exec'; try { API_URL = localStorage.getItem('sjc_api') || API_URL; } catch (e) {}
@@ -111,7 +113,7 @@ function dLeft(n) { return n <= 1 ? '오늘 마감' : n + '일 남음'; }
 function call(fn, args) {
   return new Promise(function (resolve, reject) {
     if (!API_URL) { reject(new Error('웹앱 주소가 없어요')); return; }
-    fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ session: SESSION, fn: fn, args: args || [] }) })
+    fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ session: SESSION, hh: HHSEL, fn: fn, args: args || [] }) })
       .then(function (r) { return r.json(); })
       .then(function (j) { if (j.ok) resolve(j.data); else reject(new Error(j.error || 'error')); })
       .catch(reject);
@@ -134,6 +136,7 @@ function go(t) { tab = t; render(); window.scrollTo(0, 0); }
 function render() {
   if (!D) return;
   document.querySelectorAll('nav button').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-t') === tab); });
+  hhBar();
   $('view').innerHTML = tab === 'home' ? homeHTML() : tab === 'hist' ? histHTML() : tab === 'cards' ? cardsHTML() : setHTML();
   afterSet();
 }
@@ -226,6 +229,7 @@ function setHTML() {
 
   h += '<h3>폰 자동 연결 안내</h3><div class="card"><div class="seg"><button class="' + (platform === 'ios' ? 'on' : '') + '" onclick="setPlat(\'ios\')">아이폰</button><button class="' + (platform === 'android' ? 'on' : '') + '" onclick="setPlat(\'android\')">안드로이드</button></div>' + guideHTML() + '</div>';
 
+  h += inviteHTML();
   h += quickGuideHTML();
   h += '<h3>로그인·보안</h3><div class="card"><p class="sub">로그인한 메일: <b>' + esc(D.me || '') + '</b><br>이 기기는 마지막 사용 후 90일 동안 로그인이 유지돼요. 한 사람당 최대 3대까지 로그인할 수 있어요.</p>' +
     '<div class="row"><button class="ghost" onclick="logout(false)">이 기기 로그아웃</button><button class="danger" onclick="logout(true)">내 모든 기기 로그아웃</button></div></div>' +
@@ -291,6 +295,25 @@ function copyText(t) {
 function copyUrl() { copyText(API_URL || D.url); }
 function copyLink() { copyText(location.origin + location.pathname); }
 function copyToken() { call('getIngestToken').then(function (t) { copyText(t); }).catch(function (e) { toast('실패: ' + errMsg(e)); }); }
+function hhBar() {
+  var el = $('hhsw'); if (!el || !D) return;
+  if (D.hhList && D.hhList.length > 1) el.innerHTML = '<select onchange="switchHH(this.value)">' + D.hhList.map(function (x) { return '<option value="' + esc(x.id) + '"' + (x.id === D.hh ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('') + '</select>';
+  else el.innerHTML = '<span>' + esc(D.hhName || '') + '</span>';
+}
+function switchHH(id) { HHSEL = id; try { localStorage.setItem('sjc_hh', id); } catch (e) {} D = null; tab = 'home'; $('view').innerHTML = '<div class="card sub">불러오는 중…</div>'; load(); }
+function makeInvite(id, name) {
+  call('createInvite', [id]).then(function (code) {
+    var link = location.origin + location.pathname + '#i=' + code;
+    copyText(link);
+    $('inv_res').innerHTML = '<b>' + esc(name) + ' 초대 링크를 복사했어요.</b><br>7일 안에, <b>한 번만</b> 열 수 있어요. 로그인할 폰에서 이 링크를 크롬(아이폰은 사파리)으로 열면 바로 로그인돼요.';
+  }).catch(function (e) { toast('실패: ' + errMsg(e)); });
+}
+function inviteHTML() {
+  if (!D.admin) return '';
+  return '<h3>가족 초대</h3><div class="card"><p class="sub">메일이 없거나 인증이 어려운 가족은 초대 링크로 로그인시켜요. 링크는 한 번만 쓸 수 있어요.</p><div class="row">' +
+    D.hhList.map(function (x) { return '<button class="ghost" onclick="makeInvite(\'' + esc(x.id) + '\',\'' + esc(x.name) + '\')">' + esc(x.name) + ' 초대 링크</button>'; }).join('') +
+    '</div><div id="inv_res" class="sub" style="margin-top:8px"></div></div>';
+}
 function logout(all) {
   if (!confirm(all ? '내 모든 기기에서 로그아웃할까요?' : '이 기기에서 로그아웃할까요?')) return;
   call(all ? 'logoutAll' : 'logout').then(function () { SESSION = ''; D = null; try { localStorage.removeItem('sjc_sess'); } catch (e) {} loginView('로그아웃했어요.'); }).catch(function (e) { toast('실패: ' + errMsg(e)); });
@@ -595,13 +618,24 @@ function verifyCode() {
   var dev = /iPhone|iPad/.test(navigator.userAgent) ? 'iPhone' : /Android/.test(navigator.userAgent) ? 'Android' : '기타';
   call('authVerify', [LOGIN_EMAIL, code, dev]).then(function (r) {
     SESSION = r.session; try { localStorage.setItem('sjc_sess', SESSION); } catch (e) {}
+    HHSEL = ''; try { localStorage.removeItem('sjc_hh'); } catch (e) {}
     $('view').innerHTML = '<div class="card sub">불러오는 중…</div>'; load();
   }).catch(function (e) { b.disabled = false; b.textContent = '확인'; toast(errMsg(e)); });
+}
+function useInvite(code) {
+  $('view').innerHTML = '<div class="card sub">초대 링크로 로그인하는 중…</div>';
+  var dev = /iPhone|iPad/.test(navigator.userAgent) ? 'iPhone' : /Android/.test(navigator.userAgent) ? 'Android' : '기타';
+  call('authInvite', [code, dev]).then(function (r) {
+    SESSION = r.session; HHSEL = r.hh; try { localStorage.setItem('sjc_sess', SESSION); localStorage.setItem('sjc_hh', HHSEL); } catch (e) {}
+    load();
+  }).catch(function (e) { loginView(errMsg(e)); });
 }
 (function () {
   var hs = location.hash || '', mu = hs.match(/[#&]u=([^&]+)/);
   if (mu) { API_URL = decodeURIComponent(mu[1]); try { localStorage.setItem('sjc_api', API_URL); } catch (e) {} }
   if (hs) { try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} } // 주소창에 남은 옛 토큰 제거
+  var mi = hs.match(/[#&]i=([^&]+)/);
+  if (mi && IS_MOBILE) { useInvite(decodeURIComponent(mi[1])); return; }
   load();
 })();
 </script>
