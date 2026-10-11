@@ -75,6 +75,27 @@ details{margin-top:8px}summary{color:var(--pri);font-size:14px}
 .ci b{display:block;font-size:17px;margin-top:2px}
 .pn{display:inline-block;background:var(--pri);color:var(--priText);font-weight:700;font-size:13px;border-radius:6px;padding:2px 8px;margin-right:8px}
 .kw{display:inline-block;background:var(--bar);border-radius:4px;padding:2px 7px;margin:3px 5px 3px 0;font-size:13px;word-break:break-all}
+.lrow{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid rgba(255,255,255,.3)}.lrow:first-of-type{border-top:0}
+.lrow .nm{font-weight:700}.lrow .rm{text-align:right}.lrow.off{opacity:.6}
+body.easy{font-size:20px;line-height:1.55}
+body.easy nav button[data-t=cards]{display:none}
+body.easy nav button{font-size:18px;padding:18px 0;font-weight:700}
+body.easy .card{padding:18px;border-radius:18px}
+body.easy button{font-size:20px;padding:16px 18px;min-height:56px;border-radius:14px}
+body.easy .hero{padding:24px 20px;border-radius:20px}
+body.easy .hero .lbl{font-size:18px;font-weight:700}
+body.easy .hero .big{font-size:38px;line-height:1.25;margin:6px 0}
+body.easy .hero .sub{font-size:20px}
+body.easy .lrow{font-size:20px;padding:12px 0;flex-direction:column;gap:2px}
+body.easy .lrow .rm{text-align:left}
+body.easy h4{font-size:20px;margin:22px 0 6px}
+body.easy .ec b.nm{font-size:22px}
+body.easy .ec .bar{height:18px;border-radius:10px;margin:12px 0 8px}
+body.easy .ec .bar i{border-radius:10px}
+body.easy .ec .st{font-size:20px;font-weight:700}
+body.easy .etx{padding:12px 0;border-top:1px solid var(--line);font-size:19px}
+body.easy .etx:first-child{border-top:0}
+body.easy input,body.easy select,body.easy textarea{font-size:20px;padding:14px}
 </style>
 </head>
 <body>
@@ -135,9 +156,13 @@ function go(t) { tab = t; render(); window.scrollTo(0, 0); }
 
 function render() {
   if (!D) return;
-  document.querySelectorAll('nav button').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-t') === tab); });
+  var E = easy();
+  document.body.classList.toggle('easy', E);
+  if (E && tab === 'cards') tab = 'home';
+  var NAVL = { home: E ? '오늘' : '홈', hist: '내역', cards: '카드', set: E ? '더보기' : '설정·안내' };
+  document.querySelectorAll('nav button').forEach(function (b) { var t = b.getAttribute('data-t'); b.classList.toggle('on', t === tab); b.textContent = NAVL[t]; });
   hhBar();
-  $('view').innerHTML = tab === 'home' ? homeHTML() : tab === 'hist' ? histHTML() : tab === 'cards' ? cardsHTML() : setHTML();
+  $('view').innerHTML = tab === 'home' ? (E ? easyHomeHTML() : homeHTML()) : tab === 'hist' ? (E ? easyHistHTML() : histHTML()) : tab === 'cards' ? cardsHTML() : (E ? easySetHTML() : setHTML());
   afterSet();
 }
 
@@ -190,6 +215,69 @@ function adjHint() {
 }
 
 /* ---------- 내역 ---------- */
+/* ===== 쉬운 화면 ===== */
+function easy() {
+  var v = null; try { v = localStorage.getItem('sjc_easy_' + (D ? D.hh : '')); } catch (e) {}
+  if (v === '1') return true;
+  if (v === '0') return false;
+  return !!(D && D.easyDefault);
+}
+function setEasy(on) {
+  try { localStorage.setItem('sjc_easy_' + D.hh, on ? '1' : '0'); } catch (e) {}
+  tab = 'home'; render(); window.scrollTo(0, 0);
+}
+// 할인 한도형 카드를 전부 나열 (보통·쉬운 화면 공통)
+function limitHero() {
+  var lim = D.status.filter(function (c) { return c.kind === 'limit'; });
+  if (!lim.length) return '';
+  var any = lim.some(function (c) { return !c.achieved; });
+  if (!any) return '';
+  var h = '<div class="hero lim"><div class="lbl">🎫 할인 한도 · 먼저 쓰세요</div>';
+  lim.forEach(function (c) {
+    h += '<div class="lrow' + (c.achieved ? ' off' : '') + '"><span class="nm">' + esc(c.name) + '</span><span class="rm">' +
+      (c.achieved ? '이번 달 한도를 다 썼어요' : '남은 한도 ' + won(c.remaining) + '<br>할인 약 ' + won(c.remainDiscount)) + '</span></div>';
+  });
+  return h + '</div>';
+}
+function easyCard(c) {
+  var goal = c.target2 > 0 ? c.target2 : c.target;
+  var pct = goal ? Math.min(100, Math.round(c.total / goal * 100)) : 0;
+  var st = c.target <= 0 ? '' : !c.achieved ? '아직 ' + won(c.remaining) + ' 남았어요' : (c.target2 > 0 && !c.achieved2) ? '1차 완료! 2차까지 ' + won(c.remaining2) : '다 채웠어요 ✅';
+  return '<div class="card ec"><b class="nm">' + esc(c.name) + '</b><div class="bar"><i style="width:' + pct + '%"></i></div>' +
+    '<div>이번 달 ' + won(c.total) + (goal ? ' / ' + won(goal) : '') + '</div>' + (st ? '<div class="st">' + st + '</div>' : '') + '</div>';
+}
+function easyLimitCard(c) {
+  var pct = c.target ? Math.min(100, Math.round(c.total / c.target * 100)) : 0;
+  return '<div class="card ec"><b class="nm">' + esc(c.name) + '</b><div class="bar"><i style="width:' + pct + '%"></i></div>' +
+    '<div>사용 ' + won(c.total) + ' / 한도 ' + won(c.target) + '</div>' +
+    '<div class="st">' + (c.achieved ? '이번 달 한도를 다 썼어요' : '남은 할인 약 ' + won(c.remainDiscount)) + '</div></div>';
+}
+function easyHomeHTML() {
+  if (!D.status.length) return '<div class="card"><h3>아직 등록된 카드가 없어요</h3><p class="sub">가족에게 카드 등록을 부탁하세요.</p></div>';
+  var h = '', r = D.rec;
+  h += limitHero();
+  if (r.type === 'pending') h += '<div class="hero"><div class="lbl">지금은 이 카드로 결제하세요</div><div class="big">' + esc(r.name) + '</div><div class="sub">앞으로 ' + won(r.remaining) + ' 더 쓰면 돼요<br>(' + dLeft(r.daysLeft) + ')</div></div>';
+  else if (r.type === 'done') h += '<div class="hero done"><div class="lbl">이번 달 카드 실적을 다 채웠어요 🎉</div><div class="big">' + esc(r.name) + '</div><div class="sub">이 카드를 쓰시면 혜택이 가장 커요</div></div>';
+  if (D.unassigned.length) h += '<div class="card"><b>어느 카드인지 모르는 결제가 ' + D.unassigned.length + '건 있어요</b><div class="sub">가족에게 알려 주세요.</div></div>';
+  var cds = D.status.filter(function (c) { return c.kind !== 'limit'; }), lim = D.status.filter(function (c) { return c.kind === 'limit'; });
+  if (cds.length) { h += '<h4>카드별 이번 달 사용액</h4>'; cds.forEach(function (c) { h += easyCard(c); }); }
+  if (lim.length) { h += '<h4>강릉페이·온누리</h4>'; lim.forEach(function (c) { h += easyLimitCard(c); }); }
+  return h + '<button style="width:100%;margin:14px 0" onclick="manualModal()">+ 결제한 금액 적기</button>';
+}
+function easyHistHTML() {
+  var h = '<h4 style="margin-top:6px">최근 결제</h4><div class="card">';
+  if (!D.recent.length) h += '<div class="sub">아직 결제 내역이 없어요.</div>';
+  D.recent.slice(0, 25).forEach(function (t) {
+    h += '<div class="etx"><div class="between"><b>' + won(t.amount) + '</b><span class="sub">' + esc(t.when) + '</span></div><div class="sub">' + esc(t.cardName || '카드 미확인') + (t.merchant ? ' · ' + esc(t.merchant) : '') + '</div></div>';
+  });
+  return h + '</div>';
+}
+function easySetHTML() {
+  return '<div class="card"><h3>화면 모양</h3><p class="sub">자세한 설정이 있는 보통 화면으로 바꿀 수 있어요.</p><button class="ghost" onclick="setEasy(false)">보통 화면으로 보기</button></div>' +
+    '<div class="card"><h3>로그인</h3><p class="sub">' + esc(D.me || '') + '</p><button class="ghost" onclick="logout(false)">로그아웃</button></div>' +
+    '<div class="card sub">카드 등록과 알림 설정은 가족이 도와드려요.</div>';
+}
+
 function histHTML() {
   var h = '';
   if (D.unassigned.length) {
@@ -216,6 +304,7 @@ function delTx(id) { if (confirm('이 내역을 삭제할까요?')) run(call('de
 /* ---------- 설정·안내 ---------- */
 function setHTML() {
   var s = D.settings, h = '';
+  h += '<h3>화면 모양</h3><div class="card"><p class="sub">글씨를 크게 하고 꼭 필요한 것만 보여 주는 화면이에요. 이 기기에서만 바뀌어요.</p><button onclick="setEasy(true)">쉬운 화면으로 보기</button></div>';
   h += '<h3>알림</h3><div class="card"><label>알림 방식</label><select id="s_mode" onchange="modeChange()">' +
     '<option value="bark"' + (s.notify === 'bark' ? ' selected' : '') + '>Bark (아이폰)</option>' +
     '<option value="ntfy"' + (s.notify === 'ntfy' ? ' selected' : '') + '>ntfy (안드로이드)</option>' +
@@ -240,7 +329,7 @@ function setHTML() {
 function modeChange() { var m = $('s_mode').value; $('s_bark').style.display = m === 'bark' ? '' : 'none'; $('s_ntfy').style.display = m === 'ntfy' ? '' : 'none'; }
 function afterSet() {
   if ($('s_mode')) modeChange();
-  if (tab === 'home' && D && D.status && D.status.length) fadeSetup();
+  if (tab === 'home' && !easy() && D && D.status && D.status.length) fadeSetup();
 }
 
 // 홈 아래쪽(할인 한도·카드 실적)은 처음엔 흐리게, 화면을 내릴수록 서서히 또렷해짐
@@ -411,7 +500,7 @@ function homeHTML() {
     return '<div class="card"><h3>카드를 먼저 등록하세요</h3><p class="sub">카드 이름, 월 필수 실적, 집계 시작일, 우선순위를 입력하면 추천이 시작돼요.</p><button onclick="go(\'cards\')">카드 등록하기</button></div>';
   }
   var h = '', r = D.rec, L = D.recLimit;
-  if (L) h += '<div class="hero lim"><div class="lbl">🎫 먼저 쓰세요 · 할인 한도</div><div class="big">' + esc(L.name) + '</div><div class="sub">남은 한도 ' + won(L.remaining) + ' · 남은 할인 약 ' + won(L.remainDiscount) + ' (' + L.rate + '%) · ' + dLeft(L.daysLeft) + '</div></div>';
+  if (L) h += limitHero();
   if (r.type === 'pending') {
     var s = D.status.filter(function (x) { return x.id === r.id; })[0];
     h += '<div class="hero"><div class="lbl">' + (L ? '그다음 · ' : '') + '지금 쓸 카드 · ' + r.tier + '단계 목표</div><div class="big">' + esc(r.name) + '</div><div class="sub">' + r.tier + '단계까지 ' + won(r.remaining) + ' 남음 · ' + dLeft(r.daysLeft) + '</div>' + (s ? gaugeSVG(s.total, s.target, s.target2) : '') + '</div>';
