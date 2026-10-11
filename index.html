@@ -36,7 +36,7 @@ button.sm{padding:6px 10px;font-size:13px}
 button{-webkit-tap-highlight-color:transparent;transition:opacity .08s,transform .08s}
 button:active{opacity:.55;transform:scale(.96)}
 button.danger{background:transparent;color:var(--warn);border:1px solid var(--line)}
-input,select,textarea{width:100%;font:inherit;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--text);margin:4px 0 8px}
+input,select,textarea{width:100%;font:inherit;font-size:16px;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--text);margin:4px 0 8px}
 label{font-size:13px;color:var(--sub)}
 .bar{height:8px;background:var(--bar);border-radius:6px;overflow:hidden;margin:8px 0 4px}.bar i{display:block;height:100%;background:var(--pri)}
 .bar.ok i{background:var(--ok)}
@@ -44,7 +44,7 @@ label{font-size:13px;color:var(--sub)}
 .badge{font-size:12px;padding:2px 8px;border-radius:20px;background:var(--bar);color:var(--sub)}.badge.ok{background:var(--ok);color:#052e12}
 .sub{color:var(--sub);font-size:13px}.neg{color:var(--warn)}
 h3{margin:4px 0 8px;font-size:16px}h4{margin:14px 0 4px;font-size:14px}
-nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav{position:fixed;left:0;right:0;bottom:0;-webkit-transform:translateZ(0);transform:translateZ(0);z-index:5;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
 nav button{flex:1;background:transparent;color:var(--sub);border-radius:0;padding:14px 0;font-size:13px}
 nav button.on{color:var(--pri)}
 #modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);align-items:flex-end;z-index:10}
@@ -185,7 +185,11 @@ function modal(title, body, okText, onOk) {
     onOk();
   };
 }
-function closeModal() { $('modal').classList.remove('on'); $('modal').innerHTML = ''; }
+function closeModal() {
+  try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch (e) {}
+  $('modal').classList.remove('on'); $('modal').innerHTML = '';
+  setTimeout(function () { window.scrollTo(window.pageXOffset || 0, window.pageYOffset || 0); }, 50);
+}
 function run(p, msg) {
   if (busy) return; busy = true; toast('처리 중…');
   p.then(function (r) { busy = false; closeModal(); toast(typeof msg === 'function' ? msg(r) : msg); load(); })
