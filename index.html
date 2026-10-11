@@ -11,7 +11,13 @@
 :root{--bg:#f4f5f7;--card:#fff;--text:#1a1d21;--sub:#6b7280;--line:#e5e7eb;--pri:#2563eb;--priText:#fff;--ok:#16a34a;--warn:#dc2626;--bar:#e5e7eb}
 @media (prefers-color-scheme:dark){:root{--bg:#0f1115;--card:#1a1d23;--text:#eef0f3;--sub:#9aa3af;--line:#2a2f37;--pri:#4f8cff;--priText:#0b1020;--ok:#4ade80;--warn:#f87171;--bar:#2a2f37}}
 *{box-sizing:border-box}
-html,body{overscroll-behavior-y:contain}
+html,body{overscroll-behavior-y:contain;overflow-x:hidden;max-width:100%;touch-action:pan-y}
+html{-webkit-text-size-adjust:100%}
+main,.card,.hero{max-width:100%;overflow-wrap:anywhere}
+main{overflow-x:clip}
+.card,.hero,.row,details,table,svg,img,input,select,textarea,button{max-width:100%}
+input,select,textarea{min-width:0;font-size:16px}
+pre,code{white-space:pre-wrap;overflow-wrap:anywhere}
 #ptr{position:fixed;top:8px;left:50%;transform:translate(-50%,0);opacity:0;background:#111;color:#fff;padding:6px 14px;border-radius:16px;font-size:13px;z-index:15;pointer-events:none}
 body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;padding-bottom:84px}
 header{padding:18px 16px 6px;font-weight:700;font-size:18px}
