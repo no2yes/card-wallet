@@ -147,15 +147,17 @@ function getLetterOnce() {
   if (LETTER_TRIED) return; LETTER_TRIED = true;
   call('getLetter', [D && D.admin ? 'preview' : '']).then(function (L) {
     LETTER = L;
-    if (L && L.show) { if (L.auto && !letterOff()) showLetter(); render(); }
+    if (L && L.show) { if (L.auto && !letterOff()) showLetter(true); render(); }
   }).catch(function () {});
 }
 function letterBtn() {
   if (!LETTER || !LETTER.show) return '';
   return '<div class="card"><h3>💌 편지</h3><button onclick="showLetter()">' + (LETTER.preview ? '편지 미리보기' : '편지 다시 보기') + '</button></div>';
 }
-function showLetter() {
+function showLetter(isAuto) {
   if (!LETTER || !LETTER.show || $('letter')) return;
+  var notify = isAuto === true && !LETTER.preview, doneSent = false;
+  if (notify) call('letterEvent', ['open']).catch(function () {});
   var h = '<div class="lt-in" id="lt_in"><div class="lt-title">' + esc(LETTER.title) + '</div>';
   LETTER.lines.forEach(function (l) { h += l ? '<p>' + esc(l) + '</p>' : '<p class="gap"></p>'; });
   h += '<div class="lt-end" id="lt_end">' + LETTER.outro.map(function (l, i) { return '<p' + (i === LETTER.outro.length - 1 ? ' class="big"' : '') + '>' + esc(l) + '</p>'; }).join('') + '</div></div>';
@@ -176,6 +178,7 @@ function showLetter() {
     var dt = Math.min((ts - (last == null ? ts : last)) / 1000, 0.1); last = ts;
     if (!LT_PAUSED) y = Math.max(endY, y - 42 * dt);
     inn.style.transform = 'translateY(' + y + 'px)';
+    if (y <= endY && notify && !doneSent) { doneSent = true; call('letterEvent', ['done']).catch(function () {}); }
     if (y > endY) requestAnimationFrame(step);
   }
   requestAnimationFrame(step);
@@ -361,7 +364,7 @@ function delTx(id) { if (confirm('이 내역을 삭제할까요?')) run(call('de
 /* ---------- 카드 ---------- */
 
 /* ---------- 설정·안내 ---------- */
-var APP_VER = '1012-2315';
+var APP_VER = '1013-0640';
 function verTag() { return '<p class="sub" style="text-align:center;opacity:.6">앱 버전 ' + APP_VER + '</p>'; }
 
 function setHTML() {
