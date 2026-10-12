@@ -47,10 +47,10 @@ h3{margin:4px 0 8px;font-size:16px}h4{margin:14px 0 4px;font-size:14px}
 nav{position:fixed;left:0;right:0;bottom:0;-webkit-transform:translateZ(0);transform:translateZ(0);z-index:5;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
 nav button{flex:1;background:transparent;color:var(--sub);border-radius:0;padding:14px 0;font-size:13px}
 nav button.on{color:var(--pri)}
-#letter{position:fixed;inset:0;z-index:100;background:#000;color:#f2efe8;opacity:0;transition:opacity 1.6s ease}
+#letter{position:fixed;inset:0;z-index:100;background:#000;color:#f2efe8;opacity:0;transition:opacity 1s ease}
 #letter.on{opacity:1}
 .lt-stage{position:absolute;left:0;right:0;top:0;bottom:calc(84px + env(safe-area-inset-bottom));overflow:hidden;-webkit-mask-image:linear-gradient(transparent,#000 16%,#000 78%,transparent);mask-image:linear-gradient(transparent,#000 16%,#000 78%,transparent)}
-.lt-in{position:absolute;left:0;right:0;top:0;padding:0 30px;text-align:center;will-change:transform;transform:translateY(100vh)}
+.lt-in{position:absolute;left:0;right:0;top:0;padding:0 30px;text-align:center;will-change:transform;transform:translateY(30vh)}
 .lt-in p{margin:0 0 10px;font-size:19px;line-height:1.75;font-family:"Noto Serif KR","Nanum Myeongjo","Apple SD Gothic Neo",serif;letter-spacing:.01em}
 .lt-in .gap{height:30px;margin:0}
 .lt-title{font-size:27px;line-height:1.5;margin-bottom:40px;font-family:"Noto Serif KR","Nanum Myeongjo","Apple SD Gothic Neo",serif}
@@ -167,8 +167,8 @@ function showLetter() {
   el.addEventListener('touchend', function () { LT_PAUSED = false; }, { passive: true });
   el.addEventListener('touchcancel', function () { LT_PAUSED = false; }, { passive: true });
   var stage = $('lt_stage'), inn = $('lt_in'), endEl = $('lt_end');
-  var vh = stage.clientHeight, y = vh;
-  var endY = vh / 2 - endEl.offsetTop - endEl.offsetHeight / 2, last = null, started = performance.now() + 1500;
+  var vh = stage.clientHeight, y = Math.round(vh * 0.30);
+  var endY = vh / 2 - endEl.offsetTop - endEl.offsetHeight / 2, last = null, started = performance.now() + 900;
   inn.style.transform = 'translateY(' + y + 'px)';
   function step(ts) {
     if (!$('letter')) return;
@@ -334,7 +334,7 @@ function easyHistHTML() {
 function easySetHTML() {
   return letterBtn() + '<div class="card"><h3>화면 모양</h3><p class="sub">자세한 설정이 있는 보통 화면으로 바꿀 수 있어요.</p><button class="ghost" onclick="setEasy(false)">보통 화면으로 보기</button></div>' +
     '<div class="card"><h3>로그인</h3><p class="sub">' + esc(D.me || '') + '</p><button class="ghost" onclick="logout(false)">로그아웃</button></div>' +
-    '<div class="card sub">카드 등록과 알림 설정은 가족이 도와드려요.</div>';
+    '<div class="card sub">카드 등록과 알림 설정은 가족이 도와드려요.</div>' + verTag();
 }
 
 function histHTML() {
@@ -361,6 +361,9 @@ function delTx(id) { if (confirm('이 내역을 삭제할까요?')) run(call('de
 /* ---------- 카드 ---------- */
 
 /* ---------- 설정·안내 ---------- */
+var APP_VER = '1012-2315';
+function verTag() { return '<p class="sub" style="text-align:center;opacity:.6">앱 버전 ' + APP_VER + '</p>'; }
+
 function setHTML() {
   var s = D.settings, h = letterBtn();
   h += '<h3>화면 모양</h3><div class="card"><p class="sub">글씨를 크게 하고 꼭 필요한 것만 보여 주는 화면이에요. 이 기기에서만 바뀌어요.</p><button onclick="setEasy(true)">쉬운 화면으로 보기</button></div>';
@@ -382,7 +385,7 @@ function setHTML() {
   h += '<h3>로그인·보안</h3><div class="card"><p class="sub">로그인한 메일: <b>' + esc(D.me || '') + '</b><br>이 기기는 마지막 사용 후 90일 동안 로그인이 유지돼요. 한 사람당 최대 3대까지 로그인할 수 있어요.</p>' +
     '<div class="row"><button class="ghost" onclick="logout(false)">이 기기 로그아웃</button><button class="danger" onclick="logout(true)">내 모든 기기 로그아웃</button></div></div>' +
     '<div class="card"><p class="sub">문자 자동 기록용 토큰은 폰 자동화(단축어)가 서버에 문자를 보낼 때만 쓰는 비밀번호예요. 앱 로그인과는 별개예요. 유출이 의심되면 재발급하고 폰 자동화의 토큰도 새 값으로 바꾸세요.</p>' +
-    '<div class="row"><button class="ghost" onclick="copyToken()">토큰 복사</button><button class="danger" onclick="rotate()">토큰 재발급</button></div></div>';
+    '<div class="row"><button class="ghost" onclick="copyToken()">토큰 복사</button><button class="danger" onclick="rotate()">토큰 재발급</button></div></div>' + verTag();
   return h;
 }
 function modeChange() { var m = $('s_mode').value; $('s_bark').style.display = m === 'bark' ? '' : 'none'; $('s_ntfy').style.display = m === 'ntfy' ? '' : 'none'; }
