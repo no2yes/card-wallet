@@ -49,6 +49,11 @@ nav button{flex:1;background:transparent;color:var(--sub);border-radius:0;paddin
 nav button.on{color:var(--pri)}
 #letter{position:fixed;inset:0;z-index:100;background:#000;color:#f2efe8;opacity:0;transition:opacity 1s ease}
 #letter.on{opacity:1}
+.lt-hearts{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.lt-h{position:absolute;bottom:-60px;animation:ltRise linear forwards;will-change:transform,opacity}
+.lt-h svg{display:block;width:100%;height:100%;fill:currentColor;animation:ltDance ease-in-out infinite;filter:drop-shadow(0 0 6px currentColor)}
+@keyframes ltRise{0%{transform:translate3d(0,0,0);opacity:0}10%{opacity:.6}80%{opacity:.5}100%{transform:translate3d(0,-120vh,0);opacity:0}}
+@keyframes ltDance{0%,100%{transform:translateX(-16px) rotate(-16deg) scale(.88)}50%{transform:translateX(16px) rotate(16deg) scale(1.12)}}
 .lt-stage{position:absolute;left:0;right:0;top:0;bottom:calc(84px + env(safe-area-inset-bottom));overflow:hidden;-webkit-mask-image:linear-gradient(transparent,#000 16%,#000 78%,transparent);mask-image:linear-gradient(transparent,#000 16%,#000 78%,transparent)}
 .lt-in{position:absolute;left:0;right:0;top:0;padding:0 30px;text-align:center;will-change:transform;transform:translateY(30vh)}
 .lt-in p{margin:0 0 10px;font-size:19px;line-height:1.75;font-family:"Noto Serif KR","Nanum Myeongjo","Apple SD Gothic Neo",serif;letter-spacing:.01em}
@@ -162,8 +167,9 @@ function showLetter(isAuto) {
   LETTER.lines.forEach(function (l) { h += l ? '<p>' + esc(l) + '</p>' : '<p class="gap"></p>'; });
   h += '<div class="lt-end" id="lt_end">' + LETTER.outro.map(function (l, i) { return '<p' + (i === LETTER.outro.length - 1 ? ' class="big"' : '') + '>' + esc(l) + '</p>'; }).join('') + '</div></div>';
   var el = document.createElement('div'); el.id = 'letter';
-  el.innerHTML = '<div class="lt-stage" id="lt_stage">' + h + '</div><div class="lt-bar"><button onclick="closeLetter()">닫기</button><button onclick="closeLetter(true)">오늘은 다시 보지 않기</button></div>';
+  el.innerHTML = '<div class="lt-hearts" id="lt_hearts"></div><div class="lt-stage" id="lt_stage">' + h + '</div><div class="lt-bar"><button onclick="closeLetter()">닫기</button><button onclick="closeLetter(true)">오늘은 다시 보지 않기</button></div>';
   document.body.appendChild(el); document.body.style.overflow = 'hidden';
+  startHearts();
   requestAnimationFrame(function () { el.classList.add('on'); });
   el.addEventListener('touchstart', function (e) { if (e.target.tagName !== 'BUTTON') LT_PAUSED = true; }, { passive: true });
   el.addEventListener('touchend', function () { LT_PAUSED = false; }, { passive: true });
@@ -183,7 +189,25 @@ function showLetter(isAuto) {
   }
   requestAnimationFrame(step);
 }
+var LT_HT = null, HEART_COLORS = ['#ff6b8a', '#ff3b6b', '#ffa3b8', '#e8325a', '#ff8fa8'];
+var HEART_SVG = '<svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>';
+function spawnHeart(pre) {
+  var box = $('lt_hearts'); if (!box || box.children.length > 22) return;
+  var d = document.createElement('div'), sz = 14 + Math.random() * 24, dur = 9 + Math.random() * 7;
+  d.className = 'lt-h';
+  d.style.cssText = 'left:' + (Math.random() * 92 + 2) + '%;width:' + sz + 'px;height:' + sz + 'px;color:' + HEART_COLORS[Math.floor(Math.random() * HEART_COLORS.length)] + ';animation-duration:' + dur + 's;' + (pre ? 'animation-delay:-' + (Math.random() * dur * 0.7) + 's;' : '');
+  d.innerHTML = HEART_SVG;
+  d.firstChild.style.animationDuration = (1.6 + Math.random() * 1.4) + 's';
+  d.firstChild.style.animationDelay = '-' + (Math.random() * 2) + 's';
+  d.addEventListener('animationend', function (e) { if (e.target === d) d.remove(); });
+  box.appendChild(d);
+}
+function startHearts() {
+  for (var i = 0; i < 9; i++) spawnHeart(true);
+  clearInterval(LT_HT); LT_HT = setInterval(function () { spawnHeart(false); }, 700);
+}
 function closeLetter(dont) {
+  clearInterval(LT_HT);
   if (dont) { try { localStorage.setItem('sjc_letter_off', LETTER.today); } catch (e) {} toast('오늘은 다시 나오지 않아요'); }
   var el = $('letter'); if (el) el.remove();
   document.body.style.overflow = ''; LT_PAUSED = false;
@@ -364,7 +388,7 @@ function delTx(id) { if (confirm('이 내역을 삭제할까요?')) run(call('de
 /* ---------- 카드 ---------- */
 
 /* ---------- 설정·안내 ---------- */
-var APP_VER = '1013-0640';
+var APP_VER = '1013-0900';
 function verTag() { return '<p class="sub" style="text-align:center;opacity:.6">앱 버전 ' + APP_VER + '</p>'; }
 
 function setHTML() {
