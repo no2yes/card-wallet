@@ -49,6 +49,8 @@ nav button{flex:1;background:transparent;color:var(--sub);border-radius:0;paddin
 nav button.on{color:var(--pri)}
 #letter{position:fixed;inset:0;z-index:100;background:#000;color:#f2efe8;opacity:0;transition:opacity 1s ease}
 #letter.on{opacity:1}
+.lt-bg{position:absolute;inset:0;background:url(letter-bg.jpg) center/cover no-repeat;opacity:0;transition:opacity 2.5s ease 0.3s;pointer-events:none}
+#letter.on .lt-bg{opacity:.36}
 .lt-hearts{position:absolute;inset:0;overflow:hidden;pointer-events:none}
 .lt-h{position:absolute;bottom:-60px;animation:ltRise linear forwards;will-change:transform,opacity}
 .lt-h svg{display:block;width:100%;height:100%;fill:currentColor;animation:ltDance ease-in-out infinite;filter:drop-shadow(0 0 6px currentColor)}
@@ -68,7 +70,7 @@ nav button.on{color:var(--pri)}
 .lt-in .gap{height:30px;margin:0}
 .lt-title{font-size:27px;line-height:1.5;margin-bottom:40px;font-family:"Noto Serif KR","Nanum Myeongjo","Apple SD Gothic Neo",serif}
 .lt-end{margin-top:110px}.lt-end p{font-size:20px}.lt-end .big{font-size:24px;margin-top:26px}
-.lt-bar{position:absolute;left:0;right:0;bottom:0;display:flex;gap:10px;justify-content:center;align-items:center;height:84px;box-sizing:border-box;padding:0 16px env(safe-area-inset-bottom);background:#000}
+.lt-bar{position:absolute;left:0;right:0;bottom:0;display:flex;gap:10px;justify-content:center;align-items:center;height:84px;box-sizing:border-box;padding:0 16px env(safe-area-inset-bottom);background:linear-gradient(rgba(0,0,0,0),rgba(0,0,0,.55))}
 .lt-bar button{background:transparent;color:#888;border:1px solid #333;font-size:13px;padding:8px 16px;border-radius:18px;margin:0}
 #modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);align-items:flex-end;z-index:10}
 #modal.on{display:flex}
@@ -175,7 +177,7 @@ function showLetter(isAuto) {
   LETTER.lines.forEach(function (l) { h += l ? '<p>' + esc(l) + '</p>' : '<p class="gap"></p>'; });
   h += '<div class="lt-end" id="lt_end">' + LETTER.outro.map(function (l, i) { return '<p' + (i === LETTER.outro.length - 1 ? ' class="big"' : '') + '>' + esc(l) + '</p>'; }).join('') + '</div></div>';
   var el = document.createElement('div'); el.id = 'letter';
-  el.innerHTML = '<div class="lt-hearts" id="lt_hearts"></div><div class="lt-stage" id="lt_stage">' + h + '</div><div class="lt-bar"><button onclick="closeLetter()">닫기</button><button onclick="closeLetter(true)">오늘은 다시 보지 않기</button></div>';
+  el.innerHTML = '<div class="lt-bg"></div><div class="lt-hearts" id="lt_hearts"></div><div class="lt-stage" id="lt_stage">' + h + '</div><div class="lt-bar"><button onclick="closeLetter()">닫기</button><button onclick="closeLetter(true)">오늘은 다시 보지 않기</button></div>';
   document.body.appendChild(el); document.body.style.overflow = 'hidden';
   startHearts();
   requestAnimationFrame(function () { el.classList.add('on'); });
@@ -407,7 +409,7 @@ function delTx(id) { if (confirm('이 내역을 삭제할까요?')) run(call('de
 /* ---------- 카드 ---------- */
 
 /* ---------- 설정·안내 ---------- */
-var APP_VER = '1013-0915';
+var APP_VER = '1013-1100';
 function verTag() { return '<p class="sub" style="text-align:center;opacity:.6">앱 버전 ' + APP_VER + '</p>'; }
 
 function setHTML() {
