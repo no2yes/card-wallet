@@ -428,6 +428,10 @@ function ledgerMonth(delta) {
   if (j < 0 || j >= ms.length) return;
   LFILTER = 'all'; loadLedger(ms[j]);
 }
+function lgUnc() {
+  LFILTER = 'unc'; render();
+  setTimeout(function () { var e = $('lgList'); if (e) e.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50);
+}
 function lgSet(f) { LFILTER = LFILTER === f ? 'all' : f; render(); }
 function lgFiltered() {
   return LD.items.filter(function (it) {
@@ -452,7 +456,7 @@ function ledgerHTML() {
     '<div class="lg3"><div><span class="sub">수입</span><b class="pos">' + won(d.income) + '</b></div><div><span class="sub">지출</span><b class="neg">' + won(d.expense) + '</b></div><div><span class="sub">증감(수입−지출)</span><b class="' + (d.net < 0 ? 'neg' : 'pos') + '">' + won(d.net) + '</b></div></div>' +
     (d.skipped ? '<div class="sub" style="margin-top:8px">카드대금·계좌이동 ' + won(d.skipped) + '은 합계에서 뺐어요. 카드로 쓴 돈은 카드 승인 내역으로 계산해요.</div>' : '') +
     '<div class="sub" style="margin-top:8px">현재 잔액은 각 계좌의 가장 최근 입출금 문자 기준이고, 증감은 이번 달 기록된 수입과 지출의 차이예요. 카드 지출은 결제일에 통장에서 빠져나가므로 둘은 다를 수 있어요.</div></div>';
-  if (d.unclassified) h += '<div class="card"><div class="between"><span>분류가 필요한 지출 <b>' + d.unclassified + '건</b></span><button class="sm" onclick="LFILTER=\'unc\';render()">분류하기</button></div></div>';
+  if (d.unclassified) h += '<div class="card"><div class="between"><span>분류가 필요한 지출 <b>' + d.unclassified + '건</b></span><button class="sm" onclick="lgUnc()">분류하기</button></div></div>';
   h += '<h3>지출 분류별</h3><div class="card">';
   if (!d.expenseByCat.length) h += '<div class="sub">이번 달 지출 내역이 없어요.</div>';
   d.expenseByCat.forEach(function (c) {
@@ -471,7 +475,7 @@ function ledgerHTML() {
     });
     h += '<div class="sub">잔액은 가장 최근 입출금 문자 기준이에요.</div></div>';
   }
-  h += '<h3>내역</h3><div class="card"><div class="chips">' +
+  h += '<h3 id="lgList">내역</h3><div class="card"><div class="chips">' +
     [['all', '전체'], ['in', '수입'], ['out', '지출'], ['unc', '미분류'], ['skip', '제외']].map(function (c) { return '<button class="' + (LFILTER === c[0] ? 'on' : '') + '" onclick="lgSet(\'' + c[0] + '\')">' + c[1] + '</button>'; }).join('') +
     (['all', 'in', 'out', 'unc', 'skip'].indexOf(LFILTER) < 0 ? '<button class="on" onclick="lgSet(\'all\')">' + esc(LFILTER) + ' ✕</button>' : '') + '</div>';
   var list = lgFiltered(), last = '';
@@ -519,7 +523,7 @@ function lgCsv(copy) {
 }
 
 /* ---------- 설정·안내 ---------- */
-var APP_VER = '1014-0830';
+var APP_VER = '1014-0840';
 function verTag() { return '<p class="sub" style="text-align:center;opacity:.6">앱 버전 ' + APP_VER + '</p>'; }
 
 function setHTML() {
