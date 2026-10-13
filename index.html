@@ -446,10 +446,12 @@ function lgAmt(it) {
 function ledgerHTML() {
   if (!LD) return '<div class="card sub">불러오는 중…</div>';
   if (LD.error) return '<div class="card"><h3>가계부를 불러오지 못했어요</h3><p class="sub">' + esc(/unknown function/.test(LD.error) ? 'Apps Script를 새 버전으로 배포하면 가계부가 열려요.' : LD.error) + '</p><button onclick="loadLedger()">다시 시도</button></div>';
-  var d = LD, h = '', ms = d.months.slice().sort(), i = ms.indexOf(d.month);
+  var d = LD, h = '', ms = d.months.slice().sort(), i = ms.indexOf(d.month), balSum = d.accounts.reduce(function (t, a) { return t + (Number(a.balance) || 0); }, 0);
   h += '<div class="card"><div class="between lgm"><button class="ghost sm" onclick="ledgerMonth(-1)"' + (i <= 0 ? ' disabled' : '') + '>◀</button><b>' + d.month.slice(0, 4) + '년 ' + Number(d.month.slice(5)) + '월</b><button class="ghost sm" onclick="ledgerMonth(1)"' + (i >= ms.length - 1 ? ' disabled' : '') + '>▶</button></div>' +
-    '<div class="lg3"><div><span class="sub">수입</span><b class="pos">' + won(d.income) + '</b></div><div><span class="sub">지출</span><b class="neg">' + won(d.expense) + '</b></div><div><span class="sub">남은 돈</span><b class="' + (d.net < 0 ? 'neg' : 'pos') + '">' + won(d.net) + '</b></div></div>' +
-    (d.skipped ? '<div class="sub" style="margin-top:8px">카드대금·계좌이동 ' + won(d.skipped) + '은 합계에서 뺐어요. 카드로 쓴 돈은 카드 승인 내역으로 계산해요.</div>' : '') + '</div>';
+    (d.accounts.length ? '<div style="text-align:center;margin:6px 0 10px"><span class="sub">현재 잔액 · 계좌 ' + d.accounts.length + '개 합계</span><div style="font-size:24px;font-weight:700" class="' + (balSum < 0 ? 'neg' : '') + '">' + won(balSum) + '</div></div>' : '') +
+    '<div class="lg3"><div><span class="sub">수입</span><b class="pos">' + won(d.income) + '</b></div><div><span class="sub">지출</span><b class="neg">' + won(d.expense) + '</b></div><div><span class="sub">증감(수입−지출)</span><b class="' + (d.net < 0 ? 'neg' : 'pos') + '">' + won(d.net) + '</b></div></div>' +
+    (d.skipped ? '<div class="sub" style="margin-top:8px">카드대금·계좌이동 ' + won(d.skipped) + '은 합계에서 뺐어요. 카드로 쓴 돈은 카드 승인 내역으로 계산해요.</div>' : '') +
+    '<div class="sub" style="margin-top:8px">현재 잔액은 각 계좌의 가장 최근 입출금 문자 기준이고, 증감은 이번 달 기록된 수입과 지출의 차이예요. 카드 지출은 결제일에 통장에서 빠져나가므로 둘은 다를 수 있어요.</div></div>';
   if (d.unclassified) h += '<div class="card"><div class="between"><span>분류가 필요한 지출 <b>' + d.unclassified + '건</b></span><button class="sm" onclick="LFILTER=\'unc\';render()">분류하기</button></div></div>';
   h += '<h3>지출 분류별</h3><div class="card">';
   if (!d.expenseByCat.length) h += '<div class="sub">이번 달 지출 내역이 없어요.</div>';
@@ -517,7 +519,7 @@ function lgCsv(copy) {
 }
 
 /* ---------- 설정·안내 ---------- */
-var APP_VER = '1014-0800';
+var APP_VER = '1014-0830';
 function verTag() { return '<p class="sub" style="text-align:center;opacity:.6">앱 버전 ' + APP_VER + '</p>'; }
 
 function setHTML() {
