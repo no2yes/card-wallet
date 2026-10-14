@@ -82,7 +82,10 @@ nav button.on{color:var(--pri)}
 #modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);align-items:flex-end;z-index:10}
 #modal.on{display:flex}
 .sheet{background:var(--card);width:100%;max-height:90vh;max-height:90dvh;display:flex;flex-direction:column;border-radius:18px 18px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));max-width:560px;margin:0 auto}
-.sbody{flex:1;overflow:auto;min-height:0;-webkit-overflow-scrolling:touch}
+.sbody{flex:1;overflow-y:auto;overflow-x:hidden;min-height:0;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y}
+.sheet{overflow:hidden;touch-action:pan-y}#modal{overscroll-behavior:contain;touch-action:pan-y}
+.sbody input[type=date],.sbody input[type=month]{-webkit-appearance:none;appearance:none;display:block;width:100%;min-width:0;max-width:100%;box-sizing:border-box;min-height:44px;text-align:left}
+.sbody input[type=date]::-webkit-date-and-time-value,.sbody input[type=month]::-webkit-date-and-time-value{text-align:left;min-width:0}
 .row.sfoot{flex:0 0 auto;margin-top:10px}
 #toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:#111;color:#fff;padding:10px 16px;border-radius:20px;font-size:14px;display:none;z-index:20;max-width:90%}
 .step{display:flex;gap:10px;margin:10px 0}.step>b{flex:0 0 24px;height:24px;border-radius:6px;background:var(--pri);color:var(--priText);text-align:center;line-height:24px;font-size:13px}
@@ -600,7 +603,7 @@ function lgCsv(copy) {
 }
 
 /* ---------- 설정·안내 ---------- */
-var APP_VER = '1014-1740';
+var APP_VER = '1015-0600';
 function verTag() { return '<p class="sub" style="text-align:center;opacity:.6">앱 버전 ' + APP_VER + '</p>'; }
 
 function setHTML() {
