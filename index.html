@@ -591,16 +591,17 @@ function runL(p, msg) {
    .catch(function (e) { busy = false; var m = $('mok'); if (m && m.dataset.t) m.textContent = m.dataset.t; toast('실패: ' + errMsg(e)); });
 }
 function lgEdit(i) {
-  var it = LD.items[i], cs = LD.cats, opts;
+  var it = LD.items[i], cs = LD.cats, opts, noKey = it.kind === 'card' && it.label === '카드 결제';
   if (it.kind === 'bank' && it.type === 'in') opts = cs.income.concat(['계좌이동', '투자']);
   else if (it.kind === 'bank') opts = cs.expense.concat(cs.skip, ['저축', '투자']);
   else opts = cs.expense;
   if (opts.indexOf(it.cat) < 0) opts = opts.concat([it.cat]);
   modal('분류 바꾸기', '<p><b>' + esc(it.label) + '</b><br><span class="sub">' + esc(it.when) + ' · ' + esc(it.src) + ' · ' + won(it.amount) + '</span></p>' +
     '<label>분류</label><select id="lg_cat">' + opts.map(function (c) { return '<option' + (c === it.cat ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select>' +
-    (it.kind === 'card' && it.label === '카드 결제' ? '<p class="sub">가맹점 정보가 없는 내역이라 이 내역만 바꿔요.</p>' : '<p class="sub">같은 ' + (it.kind === 'bank' ? '상대방·용도' : '가맹점') + '은 앞으로도 이 분류로 기억해요.</p>') +
+    (noKey ? '' : '<label style="display:flex;align-items:center;gap:8px;margin:6px 0"><input type="checkbox" id="lg_all" checked style="width:auto;margin:0;flex:none"><span>같은 ' + (it.kind === 'bank' ? '상대방' : '가맹점') + '도 함께 바꾸고 기억하기</span></label>') +
+    (noKey ? '<p class="sub">가맹점 정보가 없는 내역이라 이 내역만 바꿔요.</p>' : '<p class="sub">끄면 이 내역 하나만 바꾸고, 같은 ' + (it.kind === 'bank' ? '상대방(예: 내 이름으로 보낸 이체)' : '가맹점') + '이 다음에 와도 기억하지 않아요.</p>') +
     (it.kind === 'bank' ? '<button class="danger sm" onclick="lgDel(\'' + it.id + '\')">이 내역 삭제</button>' : ''),
-    '저장', function () { runL(call('setLedgerCategory', [it.kind, it.id, $('lg_cat').value]), function (r) { return '바꿨어요' + (r && r.changed > 1 ? ' (' + r.changed + '건)' : ''); }); });
+    '저장', function () { runL(call('setLedgerCategory', [it.kind, it.id, $('lg_cat').value, !noKey && !$('lg_all').checked]), function (r) { return '바꿨어요' + (r && r.changed > 1 ? ' (' + r.changed + '건)' : ''); }); });
 }
 function lgDel(id) { if (confirm('이 내역을 삭제할까요?')) runL(call('deleteBank', [id]), '삭제했어요'); }
 function lgLabel(k) {
@@ -619,7 +620,7 @@ function lgCsv(copy) {
 }
 
 /* ---------- 설정·안내 ---------- */
-var APP_VER = '1015-0800';
+var APP_VER = '1015-0815';
 function verTag() { return '<p class="sub" style="text-align:center;opacity:.6">앱 버전 ' + APP_VER + '</p>'; }
 
 function setHTML() {
