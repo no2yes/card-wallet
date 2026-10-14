@@ -417,12 +417,13 @@ function delTx(id) { if (confirm('이 내역을 삭제할까요?')) run(call('de
 /* ---------- 카드 ---------- */
 
 /* ---------- 가계부 ---------- */
-var LD = null, LMONTH = '', LFILTER = 'all', INV = null;
+var LD = null, LMONTH = '', LFILTER = 'all', INV = null, LOANS = null;
 function loadLedger(m) {
   if (m !== undefined) LMONTH = m;
   call('getLedger', [LMONTH]).then(function (d) { LD = d; LMONTH = d.month; if (tab === 'ledger') render(); })
     .catch(function (e) { LD = { error: errMsg(e) }; if (tab === 'ledger') render(); });
   call('getInvest', []).then(function (v) { INV = v; if (tab === 'ledger') render(); }).catch(function () { INV = null; });
+  call('getLoans', []).then(function (v) { LOANS = v; if (tab === 'ledger') render(); }).catch(function () { LOANS = null; });
 }
 function ledgerMonth(delta) {
   var ms = LD.months.slice().sort(), j = ms.indexOf(LD.month) + delta;
@@ -480,6 +481,7 @@ function ledgerHTML() {
     h += '<div class="sub">잔액은 가장 최근 입출금 문자 기준이에요.</div></div>';
   }
   if (INV) h += invHTML();
+  if (LOANS) h += loansHTML();
   h += '<h3 id="lgList">내역</h3><div class="card"><div class="chips">' +
     [['all', '전체'], ['in', '수입'], ['out', '지출'], ['unc', '미분류'], ['inv', '투자'], ['skip', '제외']].map(function (c) { return '<button class="' + (LFILTER === c[0] ? 'on' : '') + '" onclick="lgSet(\'' + c[0] + '\')">' + c[1] + '</button>'; }).join('') +
     (['all', 'in', 'out', 'unc', 'inv', 'skip'].indexOf(LFILTER) < 0 ? '<button class="on" onclick="lgSet(\'all\')">' + esc(LFILTER) + ' ✕</button>' : '') + '</div>';
@@ -503,6 +505,59 @@ function invHTML() {
   });
   if (!v.items.length) h += '<div class="sub" style="margin-top:6px">아직 투자로 분류된 이체가 없어요. 증권사 이체는 자동으로 분류돼요. 안 잡히면 내역에서 분류를 "투자"로 바꿔 주세요.</div>';
   return h + '<div class="row"><button class="ghost sm" onclick="invBase()">시작 원금 입력</button><button class="ghost sm" onclick="lgGo(\'inv\')">이번 달 투자 내역</button></div></div>';
+}
+function todayStr() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+function loansHTML() {
+  var v = LOANS, h = '<h3>대출</h3><div class="card">';
+  if (v.loans.length) {
+    h += '<div style="text-align:center;margin:4px 0 10px"><span class="sub">총 대출 잔액 · 월 이자 약 ' + won(v.totalMonthlyInterest) + '</span><div style="font-size:24px;font-weight:700" class="neg">' + won(v.totalBalance) + '</div></div>';
+    v.loans.forEach(function (l, k) {
+      h += '<div class="lgi" onclick="loanDetail(' + k + ')"><div class="l"><b>' + esc(l.name) + '</b><span class="sub">' + esc((l.owner ? l.owner + ' · ' : '') + (l.org ? l.org + ' · ' : '') + '연 ' + l.rate + '%' + (l.maturity ? ' · 만기 ' + l.maturity : '')) + '</span></div>' +
+        '<div class="r"><b>' + won(l.balance) + '</b><br><span class="badge' + (l.kind === 'bank' ? ' ok' : '') + '">' + (l.kind === 'bank' ? '문자 자동' : '월급 공제') + '</span></div></div>';
+    });
+  } else h += '<div class="sub">등록된 대출이 없어요. 대출을 추가하면 남은 원금과 월 이자를 따라가요.</div>';
+  return h + '<div class="row"><button class="ghost sm" onclick="loanForm(-1)">+ 대출 추가</button></div></div>';
+}
+function loanDetail(k) {
+  var l = LOANS.loans[k];
+  var h = '<p class="sub">' + esc((l.owner ? l.owner + ' · ' : '') + (l.org || '') + ' · 연 ' + l.rate + '%' + (l.maturity ? ' · 만기 ' + l.maturity : '')) + '</p>' +
+    '<div class="lg3"><div><span class="sub">남은 원금</span><b style="font-size:14px;white-space:nowrap">' + won(l.balance) + '</b></div><div><span class="sub">월 이자(예상)</span><b style="font-size:14px;white-space:nowrap">' + won(l.monthlyInterest) + '</b></div><div><span class="sub">기준 이후 갚은 원금</span><b style="font-size:14px;white-space:nowrap">' + won(l.paidPrincipal) + '</b></div></div>' +
+    '<p class="sub" style="margin-top:8px">기준일 ' + esc(l.asof) + ' 잔액 ' + won(l.baseBalance) + ' 이후의 상환만 반영해요.' +
+    (l.kind === 'bank' ? ' 은행 출금 문자에 "' + esc(l.keyword || '(단어 없음)') + '"이 있으면 상환으로 잡고, 이자를 먼저 빼고 나머지를 원금으로 계산해요.' + (l.accrued ? ' 아직 못 낸 이자는 약 ' + won(l.accrued) + '이에요.' : '') : ' 월급에서 빠지는 이자는 따로 기록하지 않고, 원금을 갚으면 직접 입력해요.') + '</p>';
+  if (l.history.length) {
+    h += '<label>최근 상환</label>';
+    l.history.forEach(function (e) {
+      h += '<div class="between" style="padding:4px 0"><span>' + esc(e.date.slice(2)) + ' · ' + (e.manual ? '직접 입력' : '문자') + (e.interest ? ' · 이자 ' + won(e.interest) : '') + '</span><span><b>원금 ' + won(e.principal) + '</b>' + (e.manual ? ' <button class="ghost sm" onclick="loanEvDel(\'' + e.id + '\')">삭제</button>' : '') + '</span></div>';
+    });
+  }
+  h += '<div class="row"><button class="ghost sm" onclick="loanForm(' + k + ')">수정 · 잔액 보정</button><button class="danger sm" onclick="loanDel(' + k + ')">대출 삭제</button></div>';
+  modal(l.name, h, '원금 상환 입력', function () { loanPay(k); });
+}
+function loanPay(k) {
+  var l = LOANS.loans[k];
+  modal('원금 상환 입력', '<p class="sub"><b>' + esc(l.name) + '</b> · 지금 남은 원금 ' + won(l.balance) + '</p><label>갚은 원금 (원)</label><input id="lp_a" inputmode="numeric" placeholder="예: 5000000"><label>날짜</label><input id="lp_d" type="date" value="' + todayStr() + '"><label>메모 (선택)</label><input id="lp_m" maxlength="40" placeholder="예: 상여금으로 일부 상환">',
+    '저장', function () { runL(call('addLoanEvent', [l.id, $('lp_a').value, $('lp_d').value, $('lp_m').value]), '반영했어요'); });
+}
+function loanEvDel(id) { if (confirm('이 상환 기록을 지울까요?')) runL(call('deleteLoanEvent', [id]), '지웠어요'); }
+function loanDel(k) { if (confirm('이 대출을 삭제할까요? 상환 기록도 함께 지워져요.')) runL(call('deleteLoan', [LOANS.loans[k].id]), '삭제했어요'); }
+function loanKindChg() { var b = $('ln_k').value === 'bank'; $('ln_kwbox').style.display = b ? '' : 'none'; }
+function loanForm(k) {
+  var l = k >= 0 ? LOANS.loans[k] : null;
+  modal(l ? '대출 수정 · 잔액 보정' : '대출 추가',
+    '<label>이름</label><input id="ln_n" maxlength="20" placeholder="예: 농협 주택담보" value="' + esc(l ? l.name : '') + '">' +
+    '<label>주인</label><input id="ln_o" maxlength="10" placeholder="예: 나, 아내" value="' + esc(l ? l.owner : '') + '">' +
+    '<label>금융기관</label><input id="ln_g" maxlength="20" placeholder="예: 농협, 교직원공제회" value="' + esc(l ? l.org : '') + '">' +
+    '<label>상환 방식</label><select id="ln_k" onchange="loanKindChg()"><option value="bank"' + (l && l.kind === 'payroll' ? '' : ' selected') + '>통장에서 빠짐 (문자 자동 반영)</option><option value="payroll"' + (l && l.kind === 'payroll' ? ' selected' : '') + '>월급에서 공제 (원금 상환은 직접 입력)</option></select>' +
+    '<div id="ln_kwbox"><label>상환 문자에 나오는 단어</label><input id="ln_w" maxlength="30" placeholder="예: 3주공담보대" value="' + esc(l ? l.keyword : '') + '"></div>' +
+    '<label>연 금리 (%)</label><input id="ln_r" inputmode="decimal" placeholder="예: 4.2" value="' + (l ? l.rate : '') + '">' +
+    '<label>' + (l ? '현재 대출 잔액 (원)' : '대출 잔액 (원)') + '</label><input id="ln_b" inputmode="numeric" placeholder="예: 100000000" value="' + (l ? Math.round(l.balance) : '') + '">' +
+    '<label>잔액 기준일</label><input id="ln_a" type="date" value="' + (l ? todayStr() : todayStr()) + '">' +
+    '<label>만기 (선택)</label><input id="ln_m" type="month" value="' + esc(l ? l.maturity : '') + '">' +
+    '<p class="sub">잔액과 기준일을 바꾸면 그날 이후의 상환부터 다시 계산해요. 은행 앱의 실제 잔액을 가끔 넣어 주면 정확해져요.</p>',
+    '저장', function () {
+      runL(call('saveLoan', [{ id: l ? l.id : '', name: $('ln_n').value, owner: $('ln_o').value, org: $('ln_g').value, kind: $('ln_k').value, keyword: $('ln_w').value, rate: $('ln_r').value, balance: $('ln_b').value, asof: $('ln_a').value, maturity: $('ln_m').value }]), '저장했어요');
+    });
+  loanKindChg();
 }
 function invBase() {
   modal('시작 원금', '<p class="sub">문자 수집 전에 이미 투자한 원금이 있으면 입력하세요. 이후 입금·회수는 자동으로 더하고 빼요.</p><label>시작 원금 (원)</label><input id="inv_b" inputmode="numeric" value="' + (INV && INV.base ? INV.base : '') + '" placeholder="예: 10000000">',
@@ -542,7 +597,7 @@ function lgCsv(copy) {
 }
 
 /* ---------- 설정·안내 ---------- */
-var APP_VER = '1014-1240';
+var APP_VER = '1014-1640';
 function verTag() { return '<p class="sub" style="text-align:center;opacity:.6">앱 버전 ' + APP_VER + '</p>'; }
 
 function setHTML() {
