@@ -582,7 +582,7 @@ function lgEdit(i) {
   if (opts.indexOf(it.cat) < 0) opts = opts.concat([it.cat]);
   modal('분류 바꾸기', '<p><b>' + esc(it.label) + '</b><br><span class="sub">' + esc(it.when) + ' · ' + esc(it.src) + ' · ' + won(it.amount) + '</span></p>' +
     '<label>분류</label><select id="lg_cat">' + opts.map(function (c) { return '<option' + (c === it.cat ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select>' +
-    '<p class="sub">같은 ' + (it.kind === 'bank' ? '상대방·용도' : '가맹점') + '은 앞으로도 이 분류로 기억해요.</p>' +
+    (it.kind === 'card' && it.label === '카드 결제' ? '<p class="sub">가맹점 정보가 없는 내역이라 이 내역만 바꿔요.</p>' : '<p class="sub">같은 ' + (it.kind === 'bank' ? '상대방·용도' : '가맹점') + '은 앞으로도 이 분류로 기억해요.</p>') +
     (it.kind === 'bank' ? '<button class="danger sm" onclick="lgDel(\'' + it.id + '\')">이 내역 삭제</button>' : ''),
     '저장', function () { runL(call('setLedgerCategory', [it.kind, it.id, $('lg_cat').value]), function (r) { return '바꿨어요' + (r && r.changed > 1 ? ' (' + r.changed + '건)' : ''); }); });
 }
@@ -603,7 +603,7 @@ function lgCsv(copy) {
 }
 
 /* ---------- 설정·안내 ---------- */
-var APP_VER = '1015-0600';
+var APP_VER = '1015-0615';
 function verTag() { return '<p class="sub" style="text-align:center;opacity:.6">앱 버전 ' + APP_VER + '</p>'; }
 
 function setHTML() {
