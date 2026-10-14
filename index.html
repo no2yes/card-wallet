@@ -444,21 +444,24 @@ function lgFiltered() {
     if (LFILTER === 'unc') return it.cat === '미분류';
     if (LFILTER === 'skip') return it.group === '제외';
     if (LFILTER === 'inv') return it.group === '투자';
+    if (LFILTER === 'sav') return it.group === '저축';
     return it.cat === LFILTER;
   });
 }
 function lgAmt(it) {
   if (it.group === '투자') return (it.type === 'out' ? '투자 ' : '회수 ') + won(it.amount);
+  if (it.group === '저축') return '저축 ' + won(it.amount);
   var v = it.group === '수입' ? it.amount : it.group === '지출' ? -it.amount : 0;
   return it.group === '제외' ? won(it.amount) : (v > 0 ? '+' : v < 0 ? '-' : '') + won(Math.abs(v));
 }
 function ledgerHTML() {
   if (!LD) return '<div class="card sub">불러오는 중…</div>';
   if (LD.error) return '<div class="card"><h3>가계부를 불러오지 못했어요</h3><p class="sub">' + esc(/unknown function/.test(LD.error) ? 'Apps Script를 새 버전으로 배포하면 가계부가 열려요.' : LD.error) + '</p><button onclick="loadLedger()">다시 시도</button></div>';
-  var d = LD, h = '', ms = d.months.slice().sort(), i = ms.indexOf(d.month), balSum = d.accounts.reduce(function (t, a) { return t + (Number(a.balance) || 0); }, 0);
+  var d = LD, h = '', ms = d.months.slice().sort(), i = ms.indexOf(d.month), sav = d.items.reduce(function (t, it) { return t + (it.group === '저축' ? it.amount : 0); }, 0), balSum = d.accounts.reduce(function (t, a) { return t + (Number(a.balance) || 0); }, 0);
   h += '<div class="card"><div class="between lgm"><button class="ghost sm" onclick="ledgerMonth(-1)"' + (i <= 0 ? ' disabled' : '') + '>◀</button><b>' + d.month.slice(0, 4) + '년 ' + Number(d.month.slice(5)) + '월</b><button class="ghost sm" onclick="ledgerMonth(1)"' + (i >= ms.length - 1 ? ' disabled' : '') + '>▶</button></div>' +
     (d.accounts.length ? '<div style="text-align:center;margin:6px 0 10px"><span class="sub">현재 잔액 · 계좌 ' + d.accounts.length + '개 합계</span><div style="font-size:24px;font-weight:700" class="' + (balSum < 0 ? 'neg' : '') + '">' + won(balSum) + '</div></div>' : '') +
     '<div class="lg3"><div><span class="sub">수입</span><b class="pos">' + won(d.income) + '</b></div><div><span class="sub">지출</span><b class="neg">' + won(d.expense) + '</b></div><div><span class="sub">증감(수입−지출)</span><b class="' + (d.net < 0 ? 'neg' : 'pos') + '">' + won(d.net) + '</b></div></div>' +
+    (sav ? '<div class="sub" style="margin-top:8px">저축·연금 납입 ' + won(sav) + '은 지출에서 뺐어요.</div>' : '') +
     (d.skipped ? '<div class="sub" style="margin-top:8px">카드대금·계좌이동 ' + won(d.skipped) + '은 합계에서 뺐어요. 카드로 쓴 돈은 카드 승인 내역으로 계산해요.</div>' : '') +
     '<div class="sub" style="margin-top:8px">현재 잔액은 각 계좌의 가장 최근 입출금 문자 기준이고, 증감은 이번 달 기록된 수입과 지출의 차이예요. 카드 지출은 결제일에 통장에서 빠져나가므로 둘은 다를 수 있어요.</div></div>';
   if (d.unclassified) h += '<div class="card"><div class="between"><span>분류가 필요한 지출 <b>' + d.unclassified + '건</b></span><button class="sm" onclick="lgUnc()">분류하기</button></div></div>';
@@ -483,8 +486,8 @@ function ledgerHTML() {
   if (INV) h += invHTML();
   if (LOANS) h += loansHTML();
   h += '<h3 id="lgList">내역</h3><div class="card"><div class="chips">' +
-    [['all', '전체'], ['in', '수입'], ['out', '지출'], ['unc', '미분류'], ['inv', '투자'], ['skip', '제외']].map(function (c) { return '<button class="' + (LFILTER === c[0] ? 'on' : '') + '" onclick="lgSet(\'' + c[0] + '\')">' + c[1] + '</button>'; }).join('') +
-    (['all', 'in', 'out', 'unc', 'inv', 'skip'].indexOf(LFILTER) < 0 ? '<button class="on" onclick="lgSet(\'all\')">' + esc(LFILTER) + ' ✕</button>' : '') + '</div>';
+    [['all', '전체'], ['in', '수입'], ['out', '지출'], ['unc', '미분류'], ['inv', '투자'], ['sav', '저축'], ['skip', '제외']].map(function (c) { return '<button class="' + (LFILTER === c[0] ? 'on' : '') + '" onclick="lgSet(\'' + c[0] + '\')">' + c[1] + '</button>'; }).join('') +
+    (['all', 'in', 'out', 'unc', 'inv', 'sav', 'skip'].indexOf(LFILTER) < 0 ? '<button class="on" onclick="lgSet(\'all\')">' + esc(LFILTER) + ' ✕</button>' : '') + '</div>';
   var list = lgFiltered(), last = '';
   if (!list.length) h += '<div class="sub">해당하는 내역이 없어요.</div>';
   list.forEach(function (it) {
@@ -548,7 +551,7 @@ function loanForm(k) {
     '<label>주인</label><input id="ln_o" maxlength="10" placeholder="예: 나, 아내" value="' + esc(l ? l.owner : '') + '">' +
     '<label>금융기관</label><input id="ln_g" maxlength="20" placeholder="예: 농협, 교직원공제회" value="' + esc(l ? l.org : '') + '">' +
     '<label>상환 방식</label><select id="ln_k" onchange="loanKindChg()"><option value="bank"' + (l && l.kind === 'payroll' ? '' : ' selected') + '>통장에서 빠짐 (문자 자동 반영)</option><option value="payroll"' + (l && l.kind === 'payroll' ? ' selected' : '') + '>월급에서 공제 (원금 상환은 직접 입력)</option></select>' +
-    '<div id="ln_kwbox"><label>상환 문자에 나오는 단어</label><input id="ln_w" maxlength="30" placeholder="예: 3주공담보대" value="' + esc(l ? l.keyword : '') + '"></div>' +
+    '<div id="ln_kwbox"><label>상환 문자에 나오는 단어</label><input id="ln_w" maxlength="30" placeholder="예: 3주공담보대 (여러 개는 쉼표로)" value="' + esc(l ? l.keyword : '') + '"></div>' +
     '<label>연 금리 (%)</label><input id="ln_r" inputmode="decimal" placeholder="예: 4.2" value="' + (l ? l.rate : '') + '">' +
     '<label>' + (l ? '현재 대출 잔액 (원)' : '대출 잔액 (원)') + '</label><input id="ln_b" inputmode="numeric" placeholder="예: 100000000" value="' + (l ? Math.round(l.balance) : '') + '">' +
     '<label>잔액 기준일</label><input id="ln_a" type="date" value="' + (l ? todayStr() : todayStr()) + '">' +
@@ -571,7 +574,7 @@ function runL(p, msg) {
 function lgEdit(i) {
   var it = LD.items[i], cs = LD.cats, opts;
   if (it.kind === 'bank' && it.type === 'in') opts = cs.income.concat(['계좌이동', '투자']);
-  else if (it.kind === 'bank') opts = cs.expense.concat(cs.skip, ['투자']);
+  else if (it.kind === 'bank') opts = cs.expense.concat(cs.skip, ['저축', '투자']);
   else opts = cs.expense;
   if (opts.indexOf(it.cat) < 0) opts = opts.concat([it.cat]);
   modal('분류 바꾸기', '<p><b>' + esc(it.label) + '</b><br><span class="sub">' + esc(it.when) + ' · ' + esc(it.src) + ' · ' + won(it.amount) + '</span></p>' +
@@ -597,7 +600,7 @@ function lgCsv(copy) {
 }
 
 /* ---------- 설정·안내 ---------- */
-var APP_VER = '1014-1640';
+var APP_VER = '1014-1740';
 function verTag() { return '<p class="sub" style="text-align:center;opacity:.6">앱 버전 ' + APP_VER + '</p>'; }
 
 function setHTML() {
