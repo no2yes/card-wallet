@@ -23,6 +23,7 @@ pre,code{white-space:pre-wrap;overflow-wrap:anywhere}
 #ptr{position:fixed;top:8px;left:50%;transform:translate(-50%,0);opacity:0;background:#111;color:#fff;padding:6px 14px;border-radius:16px;font-size:13px;z-index:15;pointer-events:none}
 body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;padding-bottom:84px}
 header{padding:18px 16px 6px;font-weight:700;font-size:18px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+#hhsw .hhseg{display:flex;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--card)}#hhsw .hhseg button{width:auto;margin:0;border:0;border-radius:0;background:transparent;color:var(--text);font-size:14px;font-weight:600;padding:5px 11px}#hhsw .hhseg button.on{background:var(--pri);color:var(--priText)}
 #hhsw select,#hhsw span{font-size:14px;font-weight:600;padding:5px 10px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--text);width:auto;margin:0}
 main{padding:8px 16px;max-width:560px;margin:0 auto}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:10px 0}
@@ -603,7 +604,7 @@ function lgCsv(copy) {
 }
 
 /* ---------- 설정·안내 ---------- */
-var APP_VER = '1015-0615';
+var APP_VER = '1015-0630';
 function verTag() { return '<p class="sub" style="text-align:center;opacity:.6">앱 버전 ' + APP_VER + '</p>'; }
 
 function setHTML() {
@@ -690,7 +691,7 @@ function copyLink() { copyText(location.origin + location.pathname); }
 function copyToken() { call('getIngestToken').then(function (t) { copyText(t); }).catch(function (e) { toast('실패: ' + errMsg(e)); }); }
 function hhBar() {
   var el = $('hhsw'); if (!el || !D) return;
-  if (D.hhList && D.hhList.length > 1) el.innerHTML = '<select onchange="switchHH(this.value)">' + D.hhList.map(function (x) { return '<option value="' + esc(x.id) + '"' + (x.id === D.hh ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('') + '</select>';
+  if (D.hhList && D.hhList.length > 1) el.innerHTML = '<div class="hhseg">' + D.hhList.map(function (x) { return '<button class="' + (x.id === D.hh ? 'on' : '') + '" onclick="' + (x.id === D.hh ? '' : 'switchHH(\'' + esc(x.id) + '\')') + '">' + esc(x.name) + '</button>'; }).join('') + '</div>';
   else el.innerHTML = '<span>' + esc(D.hhName || '') + '</span>';
 }
 function switchHH(id) { HHSEL = id; try { localStorage.setItem('sjc_hh', id); } catch (e) {} D = null; tab = 'home'; $('view').innerHTML = '<div class="card sub">불러오는 중…</div>'; load(); }
