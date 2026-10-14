@@ -535,7 +535,7 @@ function loanDetail(k) {
   var h = '<p class="sub">' + esc((l.owner ? l.owner + ' · ' : '') + (l.org || '') + ' · 연 ' + l.rate + '%' + (l.maturity ? ' · 만기 ' + l.maturity : '')) + '</p>' +
     '<div class="lg3"><div><span class="sub">남은 원금</span><b style="font-size:14px;white-space:nowrap">' + won(l.balance) + '</b></div><div><span class="sub">월 이자(예상)</span><b style="font-size:14px;white-space:nowrap">' + won(l.monthlyInterest) + '</b></div><div><span class="sub">기준 이후 갚은 원금</span><b style="font-size:14px;white-space:nowrap">' + won(l.paidPrincipal) + '</b></div></div>' +
     '<p class="sub" style="margin-top:8px">기준일 ' + esc(l.asof) + ' 잔액 ' + won(l.baseBalance) + ' 이후의 상환만 반영해요.' +
-    (l.kind === 'bank' ? ' 은행 출금 문자에 "' + esc(l.keyword || '(단어 없음)') + '"이 있으면 상환으로 잡고, 이자를 먼저 빼고 나머지를 원금으로 계산해요.' + (l.accrued ? ' 아직 못 낸 이자는 약 ' + won(l.accrued) + '이에요.' : '') : ' 월급에서 빠지는 이자는 따로 기록하지 않고, 원금을 갚으면 직접 입력해요.') + '</p>';
+    (l.kind === 'bank' ? ' ' + (l.account ? esc(accName(l.account)) + '에서 나가는 ' : '은행 ') + '출금 문자에 "' + esc(l.keyword || '(단어 없음)') + '"이 있으면 상환으로 잡고, 이자를 먼저 빼고 나머지를 원금으로 계산해요.' + (l.accrued ? ' 아직 못 낸 이자는 약 ' + won(l.accrued) + '이에요.' : '') : ' 월급에서 빠지는 이자는 따로 기록하지 않고, 원금을 갚으면 직접 입력해요.') + '</p>';
   if (l.history.length) {
     h += '<label>최근 상환</label>';
     l.history.forEach(function (e) {
@@ -552,6 +552,16 @@ function loanPay(k) {
 }
 function loanEvDel(id) { if (confirm('이 상환 기록을 지울까요?')) runL(call('deleteLoanEvent', [id]), '지웠어요'); }
 function loanDel(k) { if (confirm('이 대출을 삭제할까요? 상환 기록도 함께 지워져요.')) runL(call('deleteLoan', [LOANS.loans[k].id]), '삭제했어요'); }
+function accOpts(sel) {
+  var list = (LD && LD.accounts) || [], h = '<option value="">모든 계좌 (문자 단어만 확인)</option>', found = !sel;
+  list.forEach(function (a) { if (a.key === sel) found = true; h += '<option value="' + esc(a.key) + '"' + (a.key === sel ? ' selected' : '') + '>' + esc((a.label ? a.label + ' · ' : '') + (a.bank || '계좌') + ' …' + a.account) + '</option>'; });
+  if (!found) h += '<option value="' + esc(sel) + '" selected>' + esc(sel) + '</option>';
+  return h;
+}
+function accName(key) {
+  var a = ((LD && LD.accounts) || []).filter(function (x) { return x.key === key; })[0];
+  return a ? (a.label ? a.label + ' · ' : '') + (a.bank || '계좌') + ' …' + a.account : key;
+}
 function loanKindChg() { var b = $('ln_k').value === 'bank'; $('ln_kwbox').style.display = b ? '' : 'none'; }
 function loanForm(k) {
   var l = k >= 0 ? LOANS.loans[k] : null;
@@ -560,14 +570,14 @@ function loanForm(k) {
     '<label>주인</label><input id="ln_o" maxlength="10" placeholder="예: 나, 아내" value="' + esc(l ? l.owner : '') + '">' +
     '<label>금융기관</label><input id="ln_g" maxlength="20" placeholder="예: 농협, 교직원공제회" value="' + esc(l ? l.org : '') + '">' +
     '<label>상환 방식</label><select id="ln_k" onchange="loanKindChg()"><option value="bank"' + (l && l.kind === 'payroll' ? '' : ' selected') + '>통장에서 빠짐 (문자 자동 반영)</option><option value="payroll"' + (l && l.kind === 'payroll' ? ' selected' : '') + '>월급에서 공제 (원금 상환은 직접 입력)</option></select>' +
-    '<div id="ln_kwbox"><label>상환 문자에 나오는 단어</label><input id="ln_w" maxlength="30" placeholder="예: 3주공담보대 (여러 개는 쉼표로)" value="' + esc(l ? l.keyword : '') + '"></div>' +
+    '<div id="ln_kwbox"><label>출금 계좌</label><select id="ln_acc">' + accOpts(l ? l.account : '') + '</select><label>상환 문자에 나오는 단어</label><input id="ln_w" maxlength="30" placeholder="예: 3주공담보대 (여러 개는 쉼표로)" value="' + esc(l ? l.keyword : '') + '"></div>' +
     '<label>연 금리 (%)</label><input id="ln_r" inputmode="decimal" placeholder="예: 4.2" value="' + (l ? l.rate : '') + '">' +
     '<label>' + (l ? '현재 대출 잔액 (원)' : '대출 잔액 (원)') + '</label><input id="ln_b" inputmode="numeric" placeholder="예: 100000000" value="' + (l ? Math.round(l.balance) : '') + '">' +
     '<label>잔액 기준일</label><input id="ln_a" type="date" value="' + (l ? todayStr() : todayStr()) + '">' +
     '<label>만기 (선택)</label><input id="ln_m" type="month" value="' + esc(l ? l.maturity : '') + '">' +
     '<p class="sub">잔액과 기준일을 바꾸면 그날 이후의 상환부터 다시 계산해요. 은행 앱의 실제 잔액을 가끔 넣어 주면 정확해져요.</p>',
     '저장', function () {
-      runL(call('saveLoan', [{ id: l ? l.id : '', name: $('ln_n').value, owner: $('ln_o').value, org: $('ln_g').value, kind: $('ln_k').value, keyword: $('ln_w').value, rate: $('ln_r').value, balance: $('ln_b').value, asof: $('ln_a').value, maturity: $('ln_m').value }]), '저장했어요');
+      runL(call('saveLoan', [{ id: l ? l.id : '', name: $('ln_n').value, owner: $('ln_o').value, org: $('ln_g').value, kind: $('ln_k').value, keyword: $('ln_w').value, account: $('ln_kwbox').style.display === 'none' ? '' : $('ln_acc').value, rate: $('ln_r').value, balance: $('ln_b').value, asof: $('ln_a').value, maturity: $('ln_m').value }]), '저장했어요');
     });
   loanKindChg();
 }
@@ -609,7 +619,7 @@ function lgCsv(copy) {
 }
 
 /* ---------- 설정·안내 ---------- */
-var APP_VER = '1015-0720';
+var APP_VER = '1015-0750';
 function verTag() { return '<p class="sub" style="text-align:center;opacity:.6">앱 버전 ' + APP_VER + '</p>'; }
 
 function setHTML() {
