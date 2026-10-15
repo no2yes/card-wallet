@@ -421,7 +421,7 @@ function delTx(id) { if (confirm('이 내역을 삭제할까요?')) run(call('de
 /* ---------- 카드 ---------- */
 
 /* ---------- 가계부 ---------- */
-var LD = null, LMONTH = '', LFILTER = 'all', INV = null, LOANS = null;
+var LD = null, LMONTH = '', LFILTER = 'all', LSHOW = 10, INV = null, LOANS = null;
 function loadLedger(m) {
   if (m !== undefined) LMONTH = m;
   call('getLedger', [LMONTH]).then(function (d) { LD = d; LMONTH = d.month; if (tab === 'ledger') render(); })
@@ -432,14 +432,15 @@ function loadLedger(m) {
 function ledgerMonth(delta) {
   var ms = LD.months.slice().sort(), j = ms.indexOf(LD.month) + delta;
   if (j < 0 || j >= ms.length) return;
-  LFILTER = 'all'; loadLedger(ms[j]);
+  LFILTER = 'all'; LSHOW = 10; loadLedger(ms[j]);
 }
 function lgUnc() { lgGo('unc'); }
 function lgGo(f) {
-  LFILTER = f; render();
+  LFILTER = f; LSHOW = 10; render();
   setTimeout(function () { var e = $('lgList'); if (e) e.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50);
 }
-function lgSet(f) { LFILTER = LFILTER === f ? 'all' : f; render(); }
+function lgSet(f) { LFILTER = LFILTER === f ? 'all' : f; LSHOW = 10; render(); }
+function lgMore() { LSHOW += 10; render(); }
 function lgFiltered() {
   return LD.items.filter(function (it) {
     if (LFILTER === 'all') return true;
@@ -500,12 +501,13 @@ function ledgerHTML() {
     (['all', 'in', 'out', 'unc', 'inv', 'sav', 'skip'].indexOf(LFILTER) < 0 ? '<button class="on" onclick="lgSet(\'all\')">' + esc(LFILTER) + ' ✕</button>' : '') + '</div>';
   var list = lgFiltered(), last = '';
   if (!list.length) h += '<div class="sub">해당하는 내역이 없어요.</div>';
-  list.forEach(function (it) {
+  list.slice(0, LSHOW).forEach(function (it) {
     var day = it.when.slice(0, 5);
     if (day !== last) { h += '<div class="lgd">' + day + '</div>'; last = day; }
     h += '<div class="lgi' + (it.group === '제외' ? ' skip' : '') + '" onclick="lgEdit(' + d.items.indexOf(it) + ')"><div class="l"><b>' + esc(it.label) + '</b><span class="sub">' + esc(it.src) + ' · ' + it.when.slice(6) + '</span></div>' +
       '<div class="r"><b class="' + (it.group === '수입' ? 'pos' : '') + '">' + lgAmt(it) + '</b><br><span class="badge' + (it.cat === '미분류' ? '' : ' ok') + '">' + esc(it.cat) + '</span></div></div>';
   });
+  if (list.length > LSHOW) h += '<div class="row"><button class="ghost" onclick="lgMore()">더보기 (' + (list.length - LSHOW) + '건 남음)</button></div>';
   h += '</div><div class="row"><button class="ghost" onclick="lgCsv(false)">엑셀(CSV) 받기</button><button class="ghost" onclick="lgCsv(true)">표 복사</button></div>';
   return h;
 }
@@ -635,7 +637,7 @@ function lgCsv(copy) {
 }
 
 /* ---------- 설정·안내 ---------- */
-var APP_VER = '1015-2030';
+var APP_VER = '1015-2115';
 function verTag() { return '<p class="sub" style="text-align:center;opacity:.6">앱 버전 ' + APP_VER + '</p>'; }
 
 function setHTML() {
