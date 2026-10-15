@@ -483,12 +483,18 @@ function ledgerHTML() {
   if (d.accounts.length) {
     h += '<h3>계좌 잔액</h3><div class="card">';
     d.accounts.forEach(function (a, k) {
-      h += '<div class="between" style="padding:5px 0"><span>' + esc((a.label ? a.label + ' · ' : '') + (a.bank || '계좌') + ' …' + a.account) + '</span><span><b class="' + (a.balance < 0 ? 'neg' : '') + '">' + won(a.balance) + '</b> <button class="ghost sm" onclick="lgLabel(' + k + ')">이름</button></span></div>';
+      h += '<div class="between" style="padding:5px 0"><span>' + esc((a.label ? a.label + ' · ' : '') + (a.bank || '계좌') + ' …' + a.account) + '</span><span><b class="' + (a.balance < 0 ? 'neg' : '') + '">' + won(a.balance) + '</b> <button class="ghost sm" onclick="lgLabel(' + k + ')">관리</button></span></div>';
     });
     h += '<div class="sub">잔액은 가장 최근 입출금 문자 기준이에요.</div></div>';
   }
   if (INV) h += invHTML();
   if (LOANS) h += loansHTML();
+  if (d.excluded) {
+    h += '<h3>가계부에서 제외한 계좌</h3><div class="card">';
+    if (!d.excluded.length) h += '<div class="sub">제외한 계좌가 없어요. 자녀 계좌처럼 가계부에 넣고 싶지 않은 계좌를 등록하면, 그 계좌 문자는 저장하지 않고 지난 내역도 숨겨요.</div>';
+    d.excluded.forEach(function (k) { h += '<div class="between" style="padding:5px 0"><span>' + esc(k) + '</span><button class="ghost sm" onclick="lgExcOff(\'' + esc(k) + '\')">다시 포함</button></div>'; });
+    h += '<div class="row"><button class="ghost sm" onclick="lgExcAdd()">+ 제외할 계좌 추가</button></div></div>';
+  }
   h += '<h3 id="lgList">내역</h3><div class="card"><div class="chips">' +
     [['all', '전체'], ['in', '수입'], ['out', '지출'], ['unc', '미분류'], ['inv', '투자'], ['sav', '저축'], ['skip', '제외']].map(function (c) { return '<button class="' + (LFILTER === c[0] ? 'on' : '') + '" onclick="lgSet(\'' + c[0] + '\')">' + c[1] + '</button>'; }).join('') +
     (['all', 'in', 'out', 'unc', 'inv', 'sav', 'skip'].indexOf(LFILTER) < 0 ? '<button class="on" onclick="lgSet(\'all\')">' + esc(LFILTER) + ' ✕</button>' : '') + '</div>';
@@ -604,9 +610,18 @@ function lgEdit(i) {
     '저장', function () { runL(call('setLedgerCategory', [it.kind, it.id, $('lg_cat').value, !noKey && !$('lg_all').checked]), function (r) { return '바꿨어요' + (r && r.changed > 1 ? ' (' + r.changed + '건)' : ''); }); });
 }
 function lgDel(id) { if (confirm('이 내역을 삭제할까요?')) runL(call('deleteBank', [id]), '삭제했어요'); }
+function lgExc(k) {
+  var a = LD.accounts[k];
+  if (confirm((a.label ? a.label + ' · ' : '') + (a.bank || '계좌') + ' …' + a.account + ' 계좌를 가계부에서 제외할까요?\n이후 문자는 저장하지 않고, 지난 내역은 숨겨져요.')) runL(call('setBankExclude', [a.key, true]), '제외했어요');
+}
+function lgExcOff(key) { runL(call('setBankExclude', [key, false]), '다시 포함했어요'); }
+function lgExcAdd() {
+  modal('제외할 계좌 추가', '<p class="sub">은행 이름 바로 뒤에 계좌 끝자리를 붙여서 적어 주세요. 문자에 <b>***-**-****55</b> 처럼 나오면 <b>농협55</b>, <b>***-****-2867-43</b> 처럼 나오면 <b>농협2867-43</b> 이에요.</p><label>계좌</label><input id="lg_ex" maxlength="40" placeholder="예: 농협55">',
+    '제외하기', function () { runL(call('setBankExclude', [$('lg_ex').value, true]), '제외했어요'); });
+}
 function lgLabel(k) {
   var a = LD.accounts[k];
-  modal('계좌 주인 표시', '<p class="sub">' + esc((a.bank || '계좌') + ' …' + a.account) + '</p><label>이름 (예: 나, 아내)</label><input id="lg_lab" maxlength="10" value="' + esc(a.label) + '">',
+  modal('계좌 주인 표시', '<p class="sub">' + esc((a.bank || '계좌') + ' …' + a.account) + '</p><label>이름 (예: 나, 아내)</label><input id="lg_lab" maxlength="10" value="' + esc(a.label) + '"><p class="sub">이 계좌를 가계부에 넣고 싶지 않다면:</p><button class="danger sm" onclick="lgExc(' + k + ')">이 계좌 가계부에서 제외</button>',
     '저장', function () { runL(call('setBankLabel', [a.key, $('lg_lab').value]), '저장했어요'); });
 }
 function lgCsv(copy) {
@@ -620,7 +635,7 @@ function lgCsv(copy) {
 }
 
 /* ---------- 설정·안내 ---------- */
-var APP_VER = '1015-0815';
+var APP_VER = '1015-2030';
 function verTag() { return '<p class="sub" style="text-align:center;opacity:.6">앱 버전 ' + APP_VER + '</p>'; }
 
 function setHTML() {
