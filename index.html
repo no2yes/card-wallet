@@ -386,11 +386,13 @@ function easyHomeHTML() {
 function easyHistHTML() {
   var h = '<h4 style="margin-top:6px">최근 결제</h4><div class="card">';
   if (!D.recent.length) h += '<div class="sub">아직 결제 내역이 없어요.</div>';
-  D.recent.slice(0, 25).forEach(function (t) {
+  D.recent.slice(0, HSHOW).forEach(function (t) {
     h += '<div class="etx"><div class="between"><b>' + won(t.amount) + '</b><span class="sub">' + esc(t.when) + '</span></div><div class="sub">' + esc(t.cardName || '카드 미확인') + (t.merchant ? ' · ' + esc(t.merchant) : '') + '</div></div>';
   });
+  if (D.recent.length > HSHOW) h += '<div class="row"><button class="ghost" onclick="histMore()">더보기 (' + (D.recent.length - HSHOW) + '건 남음)</button></div>';
   return h + '</div>';
 }
+function histMore() { HSHOW += 10; render(); }
 function easySetHTML() {
   return letterBtn() + '<div class="card"><h3>화면 모양</h3><p class="sub">자세한 설정이 있는 보통 화면으로 바꿀 수 있어요.</p><button class="ghost" onclick="setEasy(false)">보통 화면으로 보기</button></div>' +
     '<div class="card"><h3>로그인</h3><p class="sub">' + esc(D.me || '') + '</p><button class="ghost" onclick="logout(false)">로그아웃</button></div>' +
@@ -409,10 +411,11 @@ function histHTML() {
   }
   h += '<h3>최근 내역</h3><div class="card">';
   if (!D.recent.length) h += '<div class="sub">아직 내역이 없어요.</div>';
-  D.recent.forEach(function (t) {
+  D.recent.slice(0, HSHOW).forEach(function (t) {
     h += '<div class="tx"><div class="between"><span>' + esc(t.when) + ' · ' + esc(t.cardName || '미분류') + '</span><b class="' + (t.amount < 0 ? 'neg' : '') + '">' + won(t.amount) + '</b></div>' +
       '<div class="between sub"><span>' + esc(t.merchant) + ' <span class="badge">' + esc(t.source) + (t.counted ? '' : ' · 실적 제외') + '</span></span><button class="danger sm" onclick="delTx(\'' + t.id + '\')">삭제</button></div></div>';
   });
+  if (D.recent.length > HSHOW) h += '<div class="row"><button class="ghost" onclick="histMore()">더보기 (' + (D.recent.length - HSHOW) + '건 남음)</button></div>';
   return h + '</div>';
 }
 function assign(id, cardId) { if (cardId) run(call('assignTx', [id, cardId]), '지정했어요'); }
@@ -421,7 +424,7 @@ function delTx(id) { if (confirm('이 내역을 삭제할까요?')) run(call('de
 /* ---------- 카드 ---------- */
 
 /* ---------- 가계부 ---------- */
-var LD = null, LMONTH = '', LFILTER = 'all', LSHOW = 10, INV = null, LOANS = null;
+var LD = null, LMONTH = '', LFILTER = 'all', LSHOW = 10, HSHOW = 10, INV = null, LOANS = null;
 function loadLedger(m) {
   if (m !== undefined) LMONTH = m;
   call('getLedger', [LMONTH]).then(function (d) { LD = d; LMONTH = d.month; if (tab === 'ledger') render(); })
@@ -637,7 +640,7 @@ function lgCsv(copy) {
 }
 
 /* ---------- 설정·안내 ---------- */
-var APP_VER = '1015-2115';
+var APP_VER = '1015-2130';
 function verTag() { return '<p class="sub" style="text-align:center;opacity:.6">앱 버전 ' + APP_VER + '</p>'; }
 
 function setHTML() {
