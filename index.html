@@ -356,7 +356,8 @@ function accGet(def) {
 }
 function accSet(v) { ACC_MEM[tab] = v; try { localStorage.setItem('sjc_acc2_' + tab, v); } catch (e) {} }
 function accToggle(k, def) {
-  var opening = accGet(def) !== k;
+  var prev = accGet(def), opening = prev !== k;
+  if (prev === 'lg' && tab === 'ledger') { LFILTER = 'all'; LSHOW = 10; }   // 내역을 접거나 다른 묶음을 열면 필터 해제
   accSet(opening ? k : '-');
   render();
   if (opening) setTimeout(function () { var e = $('acc_' + k); if (e) e.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60);
@@ -687,7 +688,7 @@ function lgCsv(copy) {
 }
 
 /* ---------- 설정·안내 ---------- */
-var APP_VER = '1018-1340';
+var APP_VER = '1018-1540';
 function verTag() { return '<p class="sub" style="text-align:center;opacity:.6">앱 버전 ' + APP_VER + '</p>'; }
 
 function setHTML() {
