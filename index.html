@@ -348,14 +348,31 @@ function setEasy(on) {
   try { localStorage.setItem('sjc_easy_' + D.hh, on ? '1' : '0'); } catch (e) {}
   tab = 'home'; render(); window.scrollTo(0, 0);
 }
-// 홈의 카드 묶음을 눌러 펼치는 아코디언 (열림 상태는 기기에 기억, 기본은 접힘)
-function accOpen(k) { try { return localStorage.getItem('sjc_acc_' + k) === '1'; } catch (e) { return !!window['_acc' + k]; } }
-function accToggle(k) { try { localStorage.setItem('sjc_acc_' + k, accOpen(k) ? '0' : '1'); } catch (e) { window['_acc' + k] = !window['_acc' + k]; } render(); }
+// 아코디언: 화면(탭)마다 한 번에 하나만 펼쳐요. 열림 상태는 기기에 기억.
+var ACC_MEM = {};
+function accGet(def) {
+  try { var v = localStorage.getItem('sjc_acc2_' + tab); if (v !== null) return v; } catch (e) { if (ACC_MEM[tab] !== undefined) return ACC_MEM[tab]; }
+  return def || '';
+}
+function accSet(v) { ACC_MEM[tab] = v; try { localStorage.setItem('sjc_acc2_' + tab, v); } catch (e) {} }
+function accToggle(k, def) {
+  var opening = accGet(def) !== k;
+  accSet(opening ? k : '-');
+  render();
+  if (opening) setTimeout(function () { var e = $('acc_' + k); if (e) e.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60);
+}
+function accSec(k, title, sum, body, def) {
+  var open = accGet(def) === k;
+  return '<button class="acc' + (open ? ' open' : '') + '" id="acc_' + k + '" onclick="accToggle(\'' + k + '\',\'' + (def || '') + '\')" aria-expanded="' + open + '"><span>' + title + (sum ? '<span class="sm2">' + sum + '</span>' : '') + '</span><span class="ar">▶</span></button>' + (open ? body : '');
+}
+// '<h3>제목</h3>…' 로 시작하는 기존 조각을 아코디언으로 감싼다
+function accWrap(k, html, sum, def) {
+  var m = html.match(/^<h3[^>]*>([\s\S]*?)<\/h3>/);
+  return accSec(k, m ? m[1] : k, sum, m ? html.slice(m[0].length) : html, def);
+}
 function accHTML(k, title, list, rowFn) {
-  var open = accOpen(k), done = list.filter(cardDone).length;
-  var sum = list.length + '장' + (done ? ' · 완료 ' + done : '');
-  return '<button class="acc' + (open ? ' open' : '') + '" onclick="accToggle(\'' + k + '\')" aria-expanded="' + open + '"><span>' + title + '<span class="sm2">' + sum + '</span></span><span class="ar">▶</span></button>' +
-    (open ? list.map(rowFn).join('') : '');
+  var done = list.filter(cardDone).length;
+  return accSec(k, title, list.length + '장' + (done ? ' · 완료 ' + done : ''), list.map(rowFn).join(''));
 }
 // 한도를 다 썼거나 실적을 다 채운 카드는 뒤로 (그 안에서는 원래 순서 유지)
 function cardDone(c) { return c.kind === 'limit' ? !!c.achieved : (c.target > 0 && !!c.achieved && !(c.target2 > 0 && !c.achieved2)); }
@@ -458,8 +475,8 @@ function ledgerMonth(delta) {
 }
 function lgUnc() { lgGo('unc'); }
 function lgGo(f) {
-  LFILTER = f; LSHOW = 10; render();
-  setTimeout(function () { var e = $('lgList'); if (e) e.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50);
+  LFILTER = f; LSHOW = 10; accSet('lg'); render();
+  setTimeout(function () { var e = $('acc_lg'); if (e) e.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50);
 }
 function lgSet(f) { LFILTER = LFILTER === f ? 'all' : f; LSHOW = 10; render(); }
 function lgMore() { LSHOW += 10; render(); }
@@ -492,33 +509,42 @@ function ledgerHTML() {
     (d.skipped ? '<div class="sub" style="margin-top:8px">카드대금·계좌이동 ' + won(d.skipped) + '은 합계에서 뺐어요. 카드로 쓴 돈은 카드 승인 내역으로 계산해요.</div>' : '') +
     '<div class="sub" style="margin-top:8px">현재 잔액은 각 계좌의 가장 최근 입출금 문자 기준이고, 증감은 이번 달 기록된 수입과 지출의 차이예요. 카드 지출은 결제일에 통장에서 빠져나가므로 둘은 다를 수 있어요.</div></div>';
   if (d.unclassified) h += '<div class="card"><div class="between"><span>분류가 필요한 지출 <b>' + d.unclassified + '건</b></span><button class="sm" onclick="lgUnc()">분류하기</button></div></div>';
+  var s0 = h.length;
   h += '<h3>지출 분류별</h3><div class="card">';
   if (!d.expenseByCat.length) h += '<div class="sub">이번 달 지출 내역이 없어요.</div>';
   d.expenseByCat.forEach(function (c) {
-    h += '<div class="lgc" onclick="lgSet(\'' + c.cat + '\')"><div class="between"><span>' + esc(c.cat) + ' <span class="sub">' + c.pct + '%</span></span><b>' + won(c.amount) + '</b></div><div class="bar"><i style="width:' + c.pct + '%"></i></div></div>';
+    h += '<div class="lgc" onclick="lgGo(\'' + c.cat + '\')"><div class="between"><span>' + esc(c.cat) + ' <span class="sub">' + c.pct + '%</span></span><b>' + won(c.amount) + '</b></div><div class="bar"><i style="width:' + c.pct + '%"></i></div></div>';
   });
   h += '</div>';
+  h = h.slice(0, s0) + accWrap('exp', h.slice(s0), won(d.expense), 'exp');
   if (d.incomeByCat.length) {
+    s0 = h.length;
     h += '<h3>수입</h3><div class="card">';
-    d.incomeByCat.forEach(function (c) { h += '<div class="lgc" onclick="lgSet(\'' + c.cat + '\')"><div class="between"><span>' + esc(c.cat) + '</span><b class="pos">' + won(c.amount) + '</b></div></div>'; });
+    d.incomeByCat.forEach(function (c) { h += '<div class="lgc" onclick="lgGo(\'' + c.cat + '\')"><div class="between"><span>' + esc(c.cat) + '</span><b class="pos">' + won(c.amount) + '</b></div></div>'; });
     h += '</div>';
+    h = h.slice(0, s0) + accWrap('inc', h.slice(s0), won(d.income), 'exp');
   }
   if (d.accounts.length) {
+    s0 = h.length;
     h += '<h3>계좌 잔액</h3><div class="card">';
     d.accounts.forEach(function (a, k) {
       h += '<div class="between" style="padding:5px 0"><span>' + esc((a.label ? a.label + ' · ' : '') + (a.bank || '계좌') + ' …' + a.account) + '</span><span><b class="' + (a.balance < 0 ? 'neg' : '') + '">' + won(a.balance) + '</b> <button class="ghost sm" onclick="lgLabel(' + k + ')">관리</button></span></div>';
     });
     h += '<div class="sub">잔액은 가장 최근 입출금 문자 기준이에요.</div></div>';
+    h = h.slice(0, s0) + accWrap('acct', h.slice(s0), d.accounts.length + '개 · ' + won(balSum), 'exp');
   }
-  if (INV) h += invHTML();
-  if (LOANS) h += loansHTML();
+  if (INV) h += accWrap('inv', invHTML(), INV.error ? '' : won(INV.principal), 'exp');
+  if (LOANS) h += accWrap('loan', loansHTML(), LOANS.error ? '' : won(LOANS.totalBalance), 'exp');
   if (d.excluded) {
+    s0 = h.length;
     h += '<h3>가계부에서 제외한 계좌</h3><div class="card">';
     if (!d.excluded.length) h += '<div class="sub">제외한 계좌가 없어요. 자녀 계좌처럼 가계부에 넣고 싶지 않은 계좌를 등록하면, 그 계좌 문자는 저장하지 않고 지난 내역도 숨겨요.</div>';
     d.excluded.forEach(function (k) { h += '<div class="between" style="padding:5px 0"><span>' + esc(k) + '</span><button class="ghost sm" onclick="lgExcOff(\'' + esc(k) + '\')">다시 포함</button></div>'; });
     h += '<div class="row"><button class="ghost sm" onclick="lgExcAdd()">+ 제외할 계좌 추가</button></div></div>';
+    h = h.slice(0, s0) + accWrap('exc', h.slice(s0), d.excluded.length + '개', 'exp');
   }
-  h += '<h3 id="lgList">내역</h3><div class="card"><div class="chips">' +
+  s0 = h.length;
+  h += '<h3>내역</h3><div class="card"><div class="chips">' +
     [['all', '전체'], ['in', '수입'], ['out', '지출'], ['unc', '미분류'], ['inv', '투자'], ['sav', '저축'], ['skip', '제외']].map(function (c) { return '<button class="' + (LFILTER === c[0] ? 'on' : '') + '" onclick="lgSet(\'' + c[0] + '\')">' + c[1] + '</button>'; }).join('') +
     (['all', 'in', 'out', 'unc', 'inv', 'sav', 'skip'].indexOf(LFILTER) < 0 ? '<button class="on" onclick="lgSet(\'all\')">' + esc(LFILTER) + ' ✕</button>' : '') + '</div>';
   var list = lgFiltered(), last = '';
@@ -530,7 +556,9 @@ function ledgerHTML() {
       '<div class="r"><b class="' + (it.group === '수입' ? 'pos' : '') + '">' + lgAmt(it) + '</b><br><span class="badge' + (it.cat === '미분류' ? '' : ' ok') + '">' + esc(it.cat) + '</span></div></div>';
   });
   if (list.length > LSHOW) h += '<div class="row"><button class="ghost" onclick="lgMore()">더보기 (' + (list.length - LSHOW) + '건 남음)</button></div>';
-  h += '</div><div class="row"><button class="ghost" onclick="lgCsv(false)">엑셀(CSV) 받기</button><button class="ghost" onclick="lgCsv(true)">표 복사</button></div>';
+  h += '</div>';
+  h = h.slice(0, s0) + accWrap('lg', h.slice(s0), list.length + '건', 'exp');
+  h += '<div class="row"><button class="ghost" onclick="lgCsv(false)">엑셀(CSV) 받기</button><button class="ghost" onclick="lgCsv(true)">표 복사</button></div>';
   return h;
 }
 function featErr(title, e, name) {
@@ -659,7 +687,7 @@ function lgCsv(copy) {
 }
 
 /* ---------- 설정·안내 ---------- */
-var APP_VER = '1018-1245';
+var APP_VER = '1018-1340';
 function verTag() { return '<p class="sub" style="text-align:center;opacity:.6">앱 버전 ' + APP_VER + '</p>'; }
 
 function setHTML() {
