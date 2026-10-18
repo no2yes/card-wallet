@@ -44,7 +44,10 @@ label{font-size:13px;color:var(--sub)}
 .between{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .badge{font-size:12px;padding:2px 8px;border-radius:20px;background:var(--bar);color:var(--sub)}.badge.ok{background:var(--ok);color:#052e12}
 .sub{color:var(--sub);font-size:13px}.neg{color:var(--warn)}
-h3{margin:4px 0 8px;font-size:16px}h4{margin:14px 0 4px;font-size:14px}
+h3{margin:4px 0 8px;font-size:16px}
+.acc{display:flex;align-items:center;justify-content:space-between;width:100%;margin:14px 0 4px;padding:10px 12px;min-height:0;background:var(--card,#fff);border:1px solid var(--line,#e3e6ec);border-radius:12px;font-size:14px;font-weight:700;color:var(--text);text-align:left}
+.acc .sm2{font-size:12px;font-weight:400;opacity:.7;margin-left:8px}.acc .ar{transition:transform .15s;flex:none;margin-left:8px}.acc.open .ar{transform:rotate(90deg)}
+body.easy .acc{color:var(--text);font-size:20px;padding:14px;min-height:0;margin:22px 0 6px}body.easy .acc .sm2{font-size:15px}h4{margin:14px 0 4px;font-size:14px}
 nav{position:fixed;left:0;right:0;bottom:0;-webkit-transform:translateZ(0);transform:translateZ(0);z-index:5;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
 nav button{flex:1;background:transparent;color:var(--sub);border-radius:0;padding:14px 0;font-size:13px;min-width:0}
 nav button.on{color:var(--pri)}
@@ -345,6 +348,15 @@ function setEasy(on) {
   try { localStorage.setItem('sjc_easy_' + D.hh, on ? '1' : '0'); } catch (e) {}
   tab = 'home'; render(); window.scrollTo(0, 0);
 }
+// 홈의 카드 묶음을 눌러 펼치는 아코디언 (열림 상태는 기기에 기억, 기본은 접힘)
+function accOpen(k) { try { return localStorage.getItem('sjc_acc_' + k) === '1'; } catch (e) { return !!window['_acc' + k]; } }
+function accToggle(k) { try { localStorage.setItem('sjc_acc_' + k, accOpen(k) ? '0' : '1'); } catch (e) { window['_acc' + k] = !window['_acc' + k]; } render(); }
+function accHTML(k, title, list, rowFn) {
+  var open = accOpen(k), done = list.filter(cardDone).length;
+  var sum = list.length + '장' + (done ? ' · 완료 ' + done : '');
+  return '<button class="acc' + (open ? ' open' : '') + '" onclick="accToggle(\'' + k + '\')" aria-expanded="' + open + '"><span>' + title + '<span class="sm2">' + sum + '</span></span><span class="ar">▶</span></button>' +
+    (open ? list.map(rowFn).join('') : '');
+}
 // 한도를 다 썼거나 실적을 다 채운 카드는 뒤로 (그 안에서는 원래 순서 유지)
 function cardDone(c) { return c.kind === 'limit' ? !!c.achieved : (c.target > 0 && !!c.achieved && !(c.target2 > 0 && !c.achieved2)); }
 function doneLast(a) {
@@ -386,8 +398,8 @@ function easyHomeHTML() {
   else if (r.type === 'done') h += '<div class="hero done"><div class="lbl">이번 달 카드 실적을 다 채웠어요 🎉</div><div class="big">' + esc(r.name) + '</div><div class="sub">이 카드를 쓰시면 혜택이 가장 커요</div></div>';
   if (D.unassigned.length) h += '<div class="card"><b>어느 카드인지 모르는 결제가 ' + D.unassigned.length + '건 있어요</b><div class="sub">가족에게 알려 주세요.</div></div>';
   var cds = doneLast(D.status.filter(function (c) { return c.kind !== 'limit'; })), lim = doneLast(D.status.filter(function (c) { return c.kind === 'limit'; }));
-  if (cds.length) { h += '<h4>카드별 이번 달 사용액</h4>'; cds.forEach(function (c) { h += easyCard(c); }); }
-  if (lim.length) { h += '<h4>강릉페이·온누리</h4>'; lim.forEach(function (c) { h += easyLimitCard(c); }); }
+  if (cds.length) h += accHTML('ecds', '카드별 이번 달 사용액', cds, easyCard);
+  if (lim.length) h += accHTML('elim', '강릉페이·온누리', lim, easyLimitCard);
   return h + '<button style="width:100%;margin:14px 0" onclick="manualModal()">+ 결제한 금액 적기</button>';
 }
 function easyHistHTML() {
@@ -647,7 +659,7 @@ function lgCsv(copy) {
 }
 
 /* ---------- 설정·안내 ---------- */
-var APP_VER = '1018-1230';
+var APP_VER = '1018-1245';
 function verTag() { return '<p class="sub" style="text-align:center;opacity:.6">앱 버전 ' + APP_VER + '</p>'; }
 
 function setHTML() {
@@ -858,8 +870,8 @@ function homeHTML() {
   if (D.unassigned.length) h += '<div class="card" onclick="go(\'hist\')"><b>미분류 결제 ' + D.unassigned.length + '건</b><div class="sub">어느 카드인지 알 수 없는 문자예요. 눌러서 카드를 지정하세요.</div></div>';
   var lim = doneLast(D.status.filter(function (c) { return c.kind === 'limit'; }));
   var cds = doneLast(D.status.filter(function (c) { return c.kind !== 'limit'; }));
-  if (lim.length) { h += '<h4>🎫 할인 한도 (월 사용한도)</h4>'; lim.forEach(function (c) { h += limitRow(c); }); }
-  if (cds.length) { h += '<h4>💳 카드 실적</h4>'; cds.forEach(function (c) { h += cardRow(c); }); }
+  if (lim.length) h += accHTML('lim', '🎫 할인 한도 (월 사용한도)', lim, limitRow);
+  if (cds.length) h += accHTML('cds', '💳 카드 실적', cds, cardRow);
   h += '<div class="row"><button onclick="manualModal()">결제 입력</button><button class="ghost" onclick="adjustModal()">누적액 보정</button></div>';
   return h;
 }
