@@ -345,9 +345,16 @@ function setEasy(on) {
   try { localStorage.setItem('sjc_easy_' + D.hh, on ? '1' : '0'); } catch (e) {}
   tab = 'home'; render(); window.scrollTo(0, 0);
 }
+// 한도를 다 썼거나 실적을 다 채운 카드는 뒤로 (그 안에서는 원래 순서 유지)
+function cardDone(c) { return c.kind === 'limit' ? !!c.achieved : (c.target > 0 && !!c.achieved && !(c.target2 > 0 && !c.achieved2)); }
+function doneLast(a) {
+  var idx = a.map(function (c, i) { return [c, i]; });
+  idx.sort(function (x, y) { return (cardDone(x[0]) - cardDone(y[0])) || (x[1] - y[1]); });
+  return idx.map(function (v) { return v[0]; });
+}
 // 할인 한도형 카드를 전부 나열 (보통·쉬운 화면 공통)
 function limitHero() {
-  var lim = D.status.filter(function (c) { return c.kind === 'limit'; });
+  var lim = doneLast(D.status.filter(function (c) { return c.kind === 'limit'; }));
   if (!lim.length) return '';
   var any = lim.some(function (c) { return !c.achieved; });
   if (!any) return '';
@@ -378,7 +385,7 @@ function easyHomeHTML() {
   if (r.type === 'pending') h += '<div class="hero"><div class="lbl">지금은 이 카드로 결제하세요</div><div class="big">' + esc(r.name) + '</div><div class="sub">앞으로 ' + won(r.remaining) + ' 더 쓰면 돼요<br>(' + dLeft(r.daysLeft) + ')</div></div>';
   else if (r.type === 'done') h += '<div class="hero done"><div class="lbl">이번 달 카드 실적을 다 채웠어요 🎉</div><div class="big">' + esc(r.name) + '</div><div class="sub">이 카드를 쓰시면 혜택이 가장 커요</div></div>';
   if (D.unassigned.length) h += '<div class="card"><b>어느 카드인지 모르는 결제가 ' + D.unassigned.length + '건 있어요</b><div class="sub">가족에게 알려 주세요.</div></div>';
-  var cds = D.status.filter(function (c) { return c.kind !== 'limit'; }), lim = D.status.filter(function (c) { return c.kind === 'limit'; });
+  var cds = doneLast(D.status.filter(function (c) { return c.kind !== 'limit'; })), lim = doneLast(D.status.filter(function (c) { return c.kind === 'limit'; }));
   if (cds.length) { h += '<h4>카드별 이번 달 사용액</h4>'; cds.forEach(function (c) { h += easyCard(c); }); }
   if (lim.length) { h += '<h4>강릉페이·온누리</h4>'; lim.forEach(function (c) { h += easyLimitCard(c); }); }
   return h + '<button style="width:100%;margin:14px 0" onclick="manualModal()">+ 결제한 금액 적기</button>';
@@ -640,7 +647,7 @@ function lgCsv(copy) {
 }
 
 /* ---------- 설정·안내 ---------- */
-var APP_VER = '1015-2130';
+var APP_VER = '1018-1230';
 function verTag() { return '<p class="sub" style="text-align:center;opacity:.6">앱 버전 ' + APP_VER + '</p>'; }
 
 function setHTML() {
@@ -849,8 +856,8 @@ function homeHTML() {
     h += '<div class="hero done"><div class="lbl">이번 기간 모든 단계 완료 🎉</div><div class="big">' + esc(r.name) + '</div><div class="sub">혜택률이 가장 높은 카드예요</div></div>';
   }
   if (D.unassigned.length) h += '<div class="card" onclick="go(\'hist\')"><b>미분류 결제 ' + D.unassigned.length + '건</b><div class="sub">어느 카드인지 알 수 없는 문자예요. 눌러서 카드를 지정하세요.</div></div>';
-  var lim = D.status.filter(function (c) { return c.kind === 'limit'; });
-  var cds = D.status.filter(function (c) { return c.kind !== 'limit'; });
+  var lim = doneLast(D.status.filter(function (c) { return c.kind === 'limit'; }));
+  var cds = doneLast(D.status.filter(function (c) { return c.kind !== 'limit'; }));
   if (lim.length) { h += '<h4>🎫 할인 한도 (월 사용한도)</h4>'; lim.forEach(function (c) { h += limitRow(c); }); }
   if (cds.length) { h += '<h4>💳 카드 실적</h4>'; cds.forEach(function (c) { h += cardRow(c); }); }
   h += '<div class="row"><button onclick="manualModal()">결제 입력</button><button class="ghost" onclick="adjustModal()">누적액 보정</button></div>';
