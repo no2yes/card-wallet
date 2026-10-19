@@ -504,11 +504,11 @@ function ledgerHTML() {
   if (LD.error) return '<div class="card"><h3>가계부를 불러오지 못했어요</h3><p class="sub">' + esc(/unknown function/.test(LD.error) ? 'Apps Script를 새 버전으로 배포하면 가계부가 열려요.' : LD.error) + '</p><button onclick="loadLedger()">다시 시도</button></div>';
   var d = LD, h = '', ms = d.months.slice().sort(), i = ms.indexOf(d.month), sav = d.items.reduce(function (t, it) { return t + (it.group === '저축' ? it.amount : 0); }, 0), balSum = d.accounts.reduce(function (t, a) { return t + (Number(a.balance) || 0); }, 0);
   h += '<div class="card"><div class="between lgm"><button class="ghost sm" onclick="ledgerMonth(-1)"' + (i <= 0 ? ' disabled' : '') + '>◀</button><b>' + d.month.slice(0, 4) + '년 ' + Number(d.month.slice(5)) + '월</b><button class="ghost sm" onclick="ledgerMonth(1)"' + (i >= ms.length - 1 ? ' disabled' : '') + '>▶</button></div>' +
-    (d.accounts.length ? '<div style="text-align:center;margin:6px 0 10px"><span class="sub">현재 잔액 · 계좌 ' + d.accounts.length + '개 합계</span><div style="font-size:24px;font-weight:700" class="' + (balSum < 0 ? 'neg' : '') + '">' + won(balSum) + '</div></div>' : '') +
-    '<div class="lg3"><div><span class="sub">수입</span><b class="pos">' + won(d.income) + '</b></div><div><span class="sub">지출</span><b class="neg">' + won(d.expense) + '</b></div><div><span class="sub">증감(수입−지출)</span><b class="' + (d.net < 0 ? 'neg' : 'pos') + '">' + won(d.net) + '</b></div></div>' +
-    (sav ? '<div class="sub" style="margin-top:8px">저축·연금 납입 ' + won(sav) + '은 지출에서 뺐어요.</div>' : '') +
-    (d.skipped ? '<div class="sub" style="margin-top:8px">카드대금·계좌이동 ' + won(d.skipped) + '은 합계에서 뺐어요. 카드로 쓴 돈은 카드 승인 내역으로 계산해요.</div>' : '') +
-    '<div class="sub" style="margin-top:8px">현재 잔액은 각 계좌의 가장 최근 입출금 문자 기준이고, 증감은 이번 달 기록된 수입과 지출의 차이예요. 카드 지출은 결제일에 통장에서 빠져나가므로 둘은 다를 수 있어요.</div></div>';
+    '<div class="sub" style="margin:10px 0 2px">현재 잔액 (계좌별)</div>' +
+    (d.accounts.length ? d.accounts.map(function (a, k) {
+      return '<div class="between" style="padding:6px 0;border-top:1px solid var(--line)"><span>' + esc((a.label ? a.label + ' · ' : '') + (a.bank || '계좌') + ' …' + a.account) + '</span><span><b class="' + (a.balance < 0 ? 'neg' : '') + '" style="font-size:16px">' + won(a.balance) + '</b> <button class="ghost sm" onclick="lgLabel(' + k + ')">관리</button></span></div>';
+    }).join('') : '<div class="sub">아직 입출금 문자가 없어요.</div>') +
+    '<div class="sub" style="margin-top:6px">각 계좌의 가장 최근 입출금 문자 기준이에요.</div></div>';
   if (d.unclassified) h += '<div class="card"><div class="between"><span>분류가 필요한 지출 <b>' + d.unclassified + '건</b></span><button class="sm" onclick="lgUnc()">분류하기</button></div></div>';
   var s0 = h.length;
   h += '<h3>지출 분류별</h3><div class="card">';
@@ -524,15 +524,6 @@ function ledgerHTML() {
     d.incomeByCat.forEach(function (c) { h += '<div class="lgc" onclick="lgGo(\'' + c.cat + '\')"><div class="between"><span>' + esc(c.cat) + '</span><b class="pos">' + won(c.amount) + '</b></div></div>'; });
     h += '</div>';
     h = h.slice(0, s0) + accWrap('inc', h.slice(s0), won(d.income), 'exp');
-  }
-  if (d.accounts.length) {
-    s0 = h.length;
-    h += '<h3>계좌 잔액</h3><div class="card">';
-    d.accounts.forEach(function (a, k) {
-      h += '<div class="between" style="padding:5px 0"><span>' + esc((a.label ? a.label + ' · ' : '') + (a.bank || '계좌') + ' …' + a.account) + '</span><span><b class="' + (a.balance < 0 ? 'neg' : '') + '">' + won(a.balance) + '</b> <button class="ghost sm" onclick="lgLabel(' + k + ')">관리</button></span></div>';
-    });
-    h += '<div class="sub">잔액은 가장 최근 입출금 문자 기준이에요.</div></div>';
-    h = h.slice(0, s0) + accWrap('acct', h.slice(s0), d.accounts.length + '개 · ' + won(balSum), 'exp');
   }
   if (INV) h += accWrap('inv', invHTML(), INV.error ? '' : won(INV.principal), 'exp');
   if (LOANS) h += accWrap('loan', loansHTML(), LOANS.error ? '' : won(LOANS.totalBalance), 'exp');
@@ -688,7 +679,7 @@ function lgCsv(copy) {
 }
 
 /* ---------- 설정·안내 ---------- */
-var APP_VER = '1018-1540';
+var APP_VER = '1020-0740';
 function verTag() { return '<p class="sub" style="text-align:center;opacity:.6">앱 버전 ' + APP_VER + '</p>'; }
 
 function setHTML() {
