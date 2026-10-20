@@ -683,7 +683,7 @@ function lgCsv(copy) {
 }
 
 /* ---------- 설정·안내 ---------- */
-var APP_VER = '1020-2330';
+var APP_VER = '1020-2335';
 function verTag() { return '<p class="sub" style="text-align:center;opacity:.6">앱 버전 ' + APP_VER + '</p>'; }
 
 function setHTML() {
@@ -791,7 +791,7 @@ function inviteHTML() {
 /* ---------- 백업 (관리자만) ---------- */
 function backupHTML() {
   if (!D.admin) return '';
-  return '<h3>백업</h3><div class="card"><p class="sub">가계부 시트 전체와 설정(학습 규칙·계좌 이름·대출·투자 등)을 내 구글 드라이브의 「카드지갑 백업」 폴더에 사본으로 저장해요. 관리자에게만 보여요.</p>' +
+  return '<h3>백업</h3><div class="card"><p class="sub">가계부 시트 전체와 설정(학습 규칙·계좌 이름·대출·투자 등)을 내 구글 드라이브의 「실적맞춤카드지갑_백업」 폴더에 사본으로 저장해요. 관리자에게만 보여요.</p>' +
     '<div class="row"><button onclick="doBackup()">지금 백업</button><button class="ghost" onclick="showBackups()">백업 목록</button></div><div id="bk_res" class="sub" style="margin-top:8px"></div></div>';
 }
 function bkLine(b) {
