@@ -453,7 +453,7 @@ function histHTML() {
   h += '<h3>최근 내역</h3><div class="card">';
   if (!D.recent.length) h += '<div class="sub">아직 내역이 없어요.</div>';
   D.recent.slice(0, HSHOW).forEach(function (t) {
-    h += '<div class="tx"><div class="between"><span>' + esc(t.when) + ' · ' + esc(t.cardName || '미분류') + '</span><b class="' + (t.amount < 0 ? 'neg' : '') + '">' + won(t.amount) + '</b></div>' +
+    h += '<div class="tx"><div class="between"><span>' + esc(t.when) + '</span><b class="' + (t.amount < 0 ? 'neg' : '') + '">' + won(t.amount) + '</b></div>' +
       '<div class="between sub"><span>' + esc(t.merchant) + ' <span class="badge">' + esc(t.source) + (t.counted ? '' : ' · 실적 제외') + '</span></span><button class="danger sm" onclick="delTx(\'' + t.id + '\')">삭제</button></div>' +
       '<div class="row"><select aria-label="카드 변경" onchange="reassign(\'' + t.id + '\',this.value,\'' + esc(t.cardId || '') + '\')">' + cardOptions(t.cardId || '', true) + '</select></div></div>';
   });
@@ -685,7 +685,7 @@ function lgCsv(copy) {
 }
 
 /* ---------- 설정·안내 ---------- */
-var APP_VER = '1021-0715';
+var APP_VER = '1021-0720';
 function verTag() { return '<p class="sub" style="text-align:center;opacity:.6">앱 버전 ' + APP_VER + '</p>'; }
 
 function setHTML() {
