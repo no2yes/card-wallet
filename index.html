@@ -683,7 +683,7 @@ function lgCsv(copy) {
 }
 
 /* ---------- 설정·안내 ---------- */
-var APP_VER = '1020-2250';
+var APP_VER = '1020-2330';
 function verTag() { return '<p class="sub" style="text-align:center;opacity:.6">앱 버전 ' + APP_VER + '</p>'; }
 
 function setHTML() {
@@ -703,6 +703,7 @@ function setHTML() {
   h += '<h3>폰 자동 연결 안내</h3><div class="card"><div class="seg"><button class="' + (platform === 'ios' ? 'on' : '') + '" onclick="setPlat(\'ios\')">아이폰</button><button class="' + (platform === 'android' ? 'on' : '') + '" onclick="setPlat(\'android\')">안드로이드</button></div>' + guideHTML() + '</div>';
 
   h += inviteHTML();
+  h += backupHTML();
   h += quickGuideHTML();
   h += '<h3>로그인·보안</h3><div class="card"><p class="sub">로그인한 메일: <b>' + esc(D.me || '') + '</b><br>이 기기는 마지막 사용 후 90일 동안 로그인이 유지돼요. 한 사람당 최대 3대까지 로그인할 수 있어요.</p>' +
     '<div class="row"><button class="ghost" onclick="logout(false)">이 기기 로그아웃</button><button class="danger" onclick="logout(true)">내 모든 기기 로그아웃</button></div></div>' +
@@ -786,6 +787,31 @@ function inviteHTML() {
   return '<h3>가족 초대</h3><div class="card"><p class="sub">메일이 없거나 인증이 어려운 가족은 초대 링크로 로그인시켜요. 링크는 한 번만 쓸 수 있어요.</p><div class="row">' +
     D.hhList.map(function (x) { return '<button class="ghost" onclick="makeInvite(\'' + esc(x.id) + '\',\'' + esc(x.name) + '\')">' + esc(x.name) + ' 초대 링크</button>'; }).join('') +
     '</div><div id="inv_res" class="sub" style="margin-top:8px"></div></div>';
+}
+/* ---------- 백업 (관리자만) ---------- */
+function backupHTML() {
+  if (!D.admin) return '';
+  return '<h3>백업</h3><div class="card"><p class="sub">가계부 시트 전체와 설정(학습 규칙·계좌 이름·대출·투자 등)을 내 구글 드라이브의 「카드지갑 백업」 폴더에 사본으로 저장해요. 관리자에게만 보여요.</p>' +
+    '<div class="row"><button onclick="doBackup()">지금 백업</button><button class="ghost" onclick="showBackups()">백업 목록</button></div><div id="bk_res" class="sub" style="margin-top:8px"></div></div>';
+}
+function bkLine(b) {
+  return '<div class="between" style="padding:5px 0"><span>' + esc(b.name.replace('카드지갑 백업 ', '')) + '</span><a href="' + esc(b.url) + '" target="_blank" rel="noopener">열기</a></div>';
+}
+function doBackup() {
+  if (!confirm('지금 백업할까요?\n시트 크기에 따라 몇 초 걸려요.')) return;
+  $('bk_res').textContent = '백업 중…';
+  call('createBackup', []).then(function (r) {
+    $('bk_res').innerHTML = '<b>백업했어요.</b>' + bkLine(r);
+  }).catch(function (e) {
+    $('bk_res').textContent = '';
+    toast('실패: ' + (/unknown function|createBackup/.test(errMsg(e)) ? 'Apps Script에 백업 코드가 없거나 새 버전으로 배포되지 않았어요' : errMsg(e)));
+  });
+}
+function showBackups() {
+  $('bk_res').textContent = '불러오는 중…';
+  call('listBackups', []).then(function (list) {
+    $('bk_res').innerHTML = list.length ? '<b>최근 백업 ' + list.length + '개</b>' + list.map(bkLine).join('') : '아직 백업이 없어요.';
+  }).catch(function (e) { $('bk_res').textContent = ''; toast('실패: ' + errMsg(e)); });
 }
 function logout(all) {
   if (!confirm(all ? '내 모든 기기에서 로그아웃할까요?' : '이 기기에서 로그아웃할까요?')) return;
