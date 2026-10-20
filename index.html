@@ -275,7 +275,9 @@ function load() {
 }
 
 
-function go(t) { tab = t; if (t === 'ledger') loadLedger(); render(); window.scrollTo(0, 0); }
+function go(t) {
+  if (t !== tab) { ACC_MEM = { home: '-', hist: '-', ledger: '-', set: '-', cards: '-' }; LFILTER = 'all'; LSHOW = 10; HSHOW = 10; }   // 탭을 옮기면 펼친 것과 필터를 모두 닫는다
+  tab = t; if (t === 'ledger') loadLedger(); render(); window.scrollTo(0, 0); }
 
 function render() {
   if (!D) return;
@@ -353,13 +355,10 @@ function setEasy(on) {
   try { localStorage.setItem('sjc_easy_' + D.hh, on ? '1' : '0'); } catch (e) {}
   tab = 'home'; render(); window.scrollTo(0, 0);
 }
-// 아코디언: 화면(탭)마다 한 번에 하나만 펼쳐요. 열림 상태는 기기에 기억.
+// 아코디언: 화면(탭)마다 한 번에 하나만 펼쳐요. 탭을 옮기면 모두 닫혀요.
 var ACC_MEM = {};
-function accGet(def) {
-  try { var v = localStorage.getItem('sjc_acc2_' + tab); if (v !== null) return v; } catch (e) { if (ACC_MEM[tab] !== undefined) return ACC_MEM[tab]; }
-  return def || '';
-}
-function accSet(v) { ACC_MEM[tab] = v; try { localStorage.setItem('sjc_acc2_' + tab, v); } catch (e) {} }
+function accGet(def) { return ACC_MEM[tab] !== undefined ? ACC_MEM[tab] : (def || ''); }
+function accSet(v) { ACC_MEM[tab] = v; }
 function accToggle(k, def) {
   var prev = accGet(def), opening = prev !== k;
   if (prev === 'lg' && tab === 'ledger') { LFILTER = 'all'; LSHOW = 10; }   // 내역을 접거나 다른 묶음을 열면 필터 해제
@@ -684,7 +683,7 @@ function lgCsv(copy) {
 }
 
 /* ---------- 설정·안내 ---------- */
-var APP_VER = '1020-2220';
+var APP_VER = '1020-2250';
 function verTag() { return '<p class="sub" style="text-align:center;opacity:.6">앱 버전 ' + APP_VER + '</p>'; }
 
 function setHTML() {
