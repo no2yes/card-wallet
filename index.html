@@ -117,7 +117,7 @@ details{margin-top:8px}summary{color:var(--pri);font-size:14px}
 .lrow{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid rgba(255,255,255,.3)}.lrow:first-of-type{border-top:0}
 .lrow .nm{font-weight:700}.lrow .rm{text-align:right}.lrow.off{opacity:.6}
 body.easy{font-size:20px;line-height:1.55}
-body.easy nav button[data-t=cards],body.easy nav button[data-t=ledger]{display:none}
+body.easy nav button[data-t=cards]{display:none}
 body.easy nav button{font-size:18px;padding:18px 0;font-weight:700}
 body.easy .card{padding:18px;border-radius:18px}
 body.easy button{font-size:20px;padding:16px 18px;min-height:56px;border-radius:14px}
@@ -129,6 +129,8 @@ body.easy .lrow{font-size:20px;padding:12px 0;flex-direction:column;gap:2px}
 body.easy .lrow .rm{text-align:left}
 body.easy h4{font-size:20px;margin:22px 0 6px}
 body.easy .ec b.nm{font-size:22px}
+body.easy .lgi .l b,body.easy .lgi .r b{font-size:19px}body.easy .lgi .sub,body.easy .lgd,body.easy .badge{font-size:16px}body.easy .lgc{font-size:19px}
+body.easy .chips button{font-size:17px;padding:10px 14px;min-height:0}body.easy .lgm b{font-size:22px}body.easy .lgm button,body.easy .sm{min-height:48px}body.easy .between .sub{font-size:16px}
 body.easy .ec .bar{height:18px;border-radius:10px;margin:12px 0 8px}
 body.easy .ec .bar i{border-radius:10px}
 body.easy .ec .st{font-size:20px;font-weight:700}
@@ -276,7 +278,7 @@ function render() {
   if (!D) return;
   var E = easy();
   document.body.classList.toggle('easy', E);
-  if (E && (tab === 'cards' || tab === 'ledger')) tab = 'home';
+  if (E && tab === 'cards') tab = 'home';
   var NAVL = { home: E ? '오늘' : '홈', hist: '내역', cards: '카드', ledger: '가계부', set: E ? '더보기' : '설정·안내' };
   document.querySelectorAll('nav button').forEach(function (b) { var t = b.getAttribute('data-t'); b.classList.toggle('on', t === tab); b.textContent = NAVL[t]; });
   hhBar();
@@ -679,7 +681,7 @@ function lgCsv(copy) {
 }
 
 /* ---------- 설정·안내 ---------- */
-var APP_VER = '1020-0740';
+var APP_VER = '1020-2155';
 function verTag() { return '<p class="sub" style="text-align:center;opacity:.6">앱 버전 ' + APP_VER + '</p>'; }
 
 function setHTML() {
