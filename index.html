@@ -129,6 +129,9 @@ body.easy .lrow{font-size:20px;padding:12px 0;flex-direction:column;gap:2px}
 body.easy .lrow .rm{text-align:left}
 body.easy h4{font-size:20px;margin:22px 0 6px}
 body.easy .ec b.nm{font-size:22px}
+.lgac{padding:6px 0;border-top:1px solid var(--line)}.lgbal{font-size:16px}
+body.easy .lgac{flex-wrap:wrap;gap:2px 8px;padding:10px 0}body.easy .lgan{font-size:17px;color:var(--sub)}body.easy .lgab{display:flex;align-items:center;gap:8px;margin-left:auto}
+body.easy .lgbal{font-size:30px;line-height:1.1;white-space:nowrap}body.easy button.lgmg{font-size:13px;padding:3px 9px;min-height:0;height:auto;border-radius:9px}
 body.easy .lgi .l b,body.easy .lgi .r b{font-size:19px}body.easy .lgi .sub,body.easy .lgd,body.easy .badge{font-size:16px}body.easy .lgc{font-size:19px}
 body.easy .chips button{font-size:17px;padding:10px 14px;min-height:0}body.easy .lgm b{font-size:22px}body.easy .lgm button,body.easy .sm{min-height:48px}body.easy .between .sub{font-size:16px}
 body.easy .ec .bar{height:18px;border-radius:10px;margin:12px 0 8px}
@@ -508,7 +511,7 @@ function ledgerHTML() {
   h += '<div class="card"><div class="between lgm"><button class="ghost sm" onclick="ledgerMonth(-1)"' + (i <= 0 ? ' disabled' : '') + '>◀</button><b>' + d.month.slice(0, 4) + '년 ' + Number(d.month.slice(5)) + '월</b><button class="ghost sm" onclick="ledgerMonth(1)"' + (i >= ms.length - 1 ? ' disabled' : '') + '>▶</button></div>' +
     '<div class="sub" style="margin:10px 0 2px">현재 잔액 (계좌별)</div>' +
     (d.accounts.length ? d.accounts.map(function (a, k) {
-      return '<div class="between" style="padding:6px 0;border-top:1px solid var(--line)"><span>' + esc((a.label ? a.label + ' · ' : '') + (a.bank || '계좌') + ' …' + a.account) + '</span><span><b class="' + (a.balance < 0 ? 'neg' : '') + '" style="font-size:16px">' + won(a.balance) + '</b> <button class="ghost sm" onclick="lgLabel(' + k + ')">관리</button></span></div>';
+      return '<div class="between lgac"><span class="lgan">' + esc((a.label ? a.label + ' · ' : '') + (a.bank || '계좌') + ' …' + a.account) + '</span><span class="lgab"><b class="lgbal ' + (a.balance < 0 ? 'neg' : '') + '">' + won(a.balance) + '</b> <button class="ghost sm lgmg" onclick="lgLabel(' + k + ')">관리</button></span></div>';
     }).join('') : '<div class="sub">아직 입출금 문자가 없어요.</div>') +
     '<div class="sub" style="margin-top:6px">각 계좌의 가장 최근 입출금 문자 기준이에요.</div></div>';
   if (d.unclassified) h += '<div class="card"><div class="between"><span>분류가 필요한 지출 <b>' + d.unclassified + '건</b></span><button class="sm" onclick="lgUnc()">분류하기</button></div></div>';
@@ -681,7 +684,7 @@ function lgCsv(copy) {
 }
 
 /* ---------- 설정·안내 ---------- */
-var APP_VER = '1020-2155';
+var APP_VER = '1020-2210';
 function verTag() { return '<p class="sub" style="text-align:center;opacity:.6">앱 버전 ' + APP_VER + '</p>'; }
 
 function setHTML() {
