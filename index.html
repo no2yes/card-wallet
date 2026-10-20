@@ -282,7 +282,7 @@ function render() {
   var E = easy();
   document.body.classList.toggle('easy', E);
   if (E && tab === 'cards') tab = 'home';
-  var NAVL = { home: E ? '오늘' : '홈', hist: '내역', cards: '카드', ledger: '가계부', set: E ? '더보기' : '설정·안내' };
+  var NAVL = { home: '홈', hist: '내역', cards: '카드', ledger: '가계부', set: E ? '더보기' : '설정·안내' };
   document.querySelectorAll('nav button').forEach(function (b) { var t = b.getAttribute('data-t'); b.classList.toggle('on', t === tab); b.textContent = NAVL[t]; });
   hhBar();
   $('view').innerHTML = tab === 'home' ? (E ? easyHomeHTML() : homeHTML()) : tab === 'hist' ? (E ? easyHistHTML() : histHTML()) : tab === 'cards' ? cardsHTML() : tab === 'ledger' ? ledgerHTML() : (E ? easySetHTML() : setHTML());
@@ -684,7 +684,7 @@ function lgCsv(copy) {
 }
 
 /* ---------- 설정·안내 ---------- */
-var APP_VER = '1020-2210';
+var APP_VER = '1020-2220';
 function verTag() { return '<p class="sub" style="text-align:center;opacity:.6">앱 버전 ' + APP_VER + '</p>'; }
 
 function setHTML() {
