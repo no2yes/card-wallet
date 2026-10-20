@@ -454,12 +454,14 @@ function histHTML() {
   if (!D.recent.length) h += '<div class="sub">아직 내역이 없어요.</div>';
   D.recent.slice(0, HSHOW).forEach(function (t) {
     h += '<div class="tx"><div class="between"><span>' + esc(t.when) + ' · ' + esc(t.cardName || '미분류') + '</span><b class="' + (t.amount < 0 ? 'neg' : '') + '">' + won(t.amount) + '</b></div>' +
-      '<div class="between sub"><span>' + esc(t.merchant) + ' <span class="badge">' + esc(t.source) + (t.counted ? '' : ' · 실적 제외') + '</span></span><button class="danger sm" onclick="delTx(\'' + t.id + '\')">삭제</button></div></div>';
+      '<div class="between sub"><span>' + esc(t.merchant) + ' <span class="badge">' + esc(t.source) + (t.counted ? '' : ' · 실적 제외') + '</span></span><button class="danger sm" onclick="delTx(\'' + t.id + '\')">삭제</button></div>' +
+      '<div class="row"><select aria-label="카드 변경" onchange="reassign(\'' + t.id + '\',this.value,\'' + esc(t.cardId || '') + '\')">' + cardOptions(t.cardId || '', true) + '</select></div></div>';
   });
   if (D.recent.length > HSHOW) h += '<div class="row"><button class="ghost" onclick="histMore()">더보기 (' + (D.recent.length - HSHOW) + '건 남음)</button></div>';
   return h + '</div>';
 }
 function assign(id, cardId) { if (cardId) run(call('assignTx', [id, cardId]), '지정했어요'); }
+function reassign(id, cardId, old) { if (cardId && cardId !== old) run(call('assignTx', [id, cardId]), '카드를 바꿨어요'); else render(); }
 function delTx(id) { if (confirm('이 내역을 삭제할까요?')) run(call('deleteTx', [id]), '삭제했어요'); }
 
 /* ---------- 카드 ---------- */
@@ -683,7 +685,7 @@ function lgCsv(copy) {
 }
 
 /* ---------- 설정·안내 ---------- */
-var APP_VER = '1020-2335';
+var APP_VER = '1021-0715';
 function verTag() { return '<p class="sub" style="text-align:center;opacity:.6">앱 버전 ' + APP_VER + '</p>'; }
 
 function setHTML() {
