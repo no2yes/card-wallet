@@ -26,6 +26,9 @@ header{padding:18px 16px 6px;font-weight:700;font-size:18px;display:flex;align-i
 #hhsw .hhseg{display:flex;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--card)}#hhsw .hhseg button{width:auto;min-height:0;height:auto;line-height:21px;margin:0;border:0;border-radius:0;background:transparent;color:var(--text);font-size:14px;font-weight:600;padding:5px 11px}#hhsw .hhseg button.on{background:var(--pri);color:var(--priText)}
 #hhsw select,#hhsw span{font-size:14px;font-weight:600;padding:5px 10px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--text);width:auto;margin:0}
 main{padding:8px 16px;max-width:560px;margin:0 auto}
+.acts{display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:8px}
+.acts button{height:28px;min-height:0;padding:0 10px;margin:0;font-size:13px;width:auto}
+select.csel{width:auto;max-width:130px;margin:0;padding:3px 22px 3px 8px;font-size:13px;border-radius:8px;min-height:0;height:28px}
 .grip{display:inline-block;padding:6px 10px 6px 2px;margin-right:2px;font-size:20px;line-height:1;color:var(--sub);cursor:grab;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .ccard{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;transition:scale .15s,box-shadow .15s}
 .ccard.lift{position:relative;z-index:6;scale:.97;box-shadow:0 12px 28px rgba(0,0,0,.30)}
@@ -458,8 +461,7 @@ function histHTML() {
   if (!D.recent.length) h += '<div class="sub">아직 내역이 없어요.</div>';
   D.recent.slice(0, HSHOW).forEach(function (t) {
     h += '<div class="tx"><div class="between"><span>' + esc(t.when) + '</span><b class="' + (t.amount < 0 ? 'neg' : '') + '">' + won(t.amount) + '</b></div>' +
-      '<div class="between sub"><span>' + esc(t.merchant) + ' <span class="badge">' + esc(t.source) + (t.counted ? '' : ' · 실적 제외') + '</span></span><button class="danger sm" onclick="delTx(\'' + t.id + '\')">삭제</button></div>' +
-      '<div class="row"><select aria-label="카드 변경" onchange="reassign(\'' + t.id + '\',this.value,\'' + esc(t.cardId || '') + '\')">' + cardOptions(t.cardId || '', true) + '</select></div></div>';
+      '<div class="between sub"><span>' + esc(t.merchant) + ' <span class="badge">' + esc(t.source) + (t.counted ? '' : ' · 실적 제외') + '</span></span><span class="acts"><select class="csel" aria-label="카드 변경" onchange="reassign(\'' + t.id + '\',this.value,\'' + esc(t.cardId || '') + '\')">' + cardOptions(t.cardId || '', true) + '</select><button class="danger sm" onclick="delTx(\'' + t.id + '\')">삭제</button></span></div></div>';
   });
   if (D.recent.length > HSHOW) h += '<div class="row"><button class="ghost" onclick="histMore()">더보기 (' + (D.recent.length - HSHOW) + '건 남음)</button></div>';
   return h + '</div>';
@@ -689,7 +691,7 @@ function lgCsv(copy) {
 }
 
 /* ---------- 설정·안내 ---------- */
-var APP_VER = '1023-0755';
+var APP_VER = '1028-2350';
 function verTag() { return '<p class="sub" style="text-align:center;opacity:.6">앱 버전 ' + APP_VER + '</p>'; }
 
 function setHTML() {
