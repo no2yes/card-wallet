@@ -705,7 +705,7 @@ function lgCsv(copy) {
 }
 
 /* ---------- 설정·안내 ---------- */
-var APP_VER = '1107-2045';
+var APP_VER = '1107-2058';
 function verTag() { return '<p class="sub" style="text-align:center;opacity:.6">앱 버전 ' + APP_VER + '</p>'; }
 
 function setHTML() {
@@ -977,8 +977,8 @@ function couponSection() {
   var body;
   if (COUP_ERR) body = '<p class="sub">쿠폰을 불러오지 못했어요: ' + esc(COUP_ERR) + '</p><p class="sub">서버(Code.gs)에 쿠폰 기능이 추가됐는지 확인하세요.</p><div class="row"><button class="ghost" onclick="reloadCoupons()">다시 불러오기</button></div>';
   else {
-    body = '<div class="row"><button onclick="couponModal()">+ 쿠폰 등록</button></div>' +
-      (COUP === null ? '<p class="sub">불러오는 중…</p>' : ok.length ? ok.map(cpRow).join('') : '<p class="sub">사용 가능한 쿠폰이 없어요.</p>') +
+    body = (COUP === null ? '<p class="sub">불러오는 중…</p>' : ok.length ? ok.map(cpRow).join('') : '<p class="sub">사용 가능한 쿠폰이 없어요.</p>') +
+      '<div class="row"><button onclick="couponModal()">+ 쿠폰 등록</button></div>' +
       (past.length ? '<div class="row"><button class="ghost" onclick="cpTogglePast()">사용완료·만료 ' + past.length + '장 ' + (COUP_PAST ? '접기' : '보기') + '</button></div>' + (COUP_PAST ? past.map(cpRow).join('') : '') : '');
   }
   return accSec('cpn', '🎟 쿠폰', sum, body);
