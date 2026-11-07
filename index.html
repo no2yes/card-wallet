@@ -705,7 +705,7 @@ function lgCsv(copy) {
 }
 
 /* ---------- 설정·안내 ---------- */
-var APP_VER = '1107-1100';
+var APP_VER = '1107-2045';
 function verTag() { return '<p class="sub" style="text-align:center;opacity:.6">앱 버전 ' + APP_VER + '</p>'; }
 
 function setHTML() {
@@ -998,7 +998,7 @@ function cpOpen(id) {
   if (c.code) info += '<div><span class="k">번호</span><b>' + esc(c.code) + '</b> <button class="ghost sm" style="width:auto;min-height:0;margin:0 0 0 6px" onclick="cpCopy(\'' + esc(c.id) + '\')">복사</button></div>';
   if (c.memo) info += '<div><span class="k">메모</span>' + esc(c.memo) + '</div>';
   if (used) info += '<div><span class="k">사용완료</span>' + esc(c.usedAt || '') + '</div>';
-  d.innerHTML = '<div class="cvbar"><b>' + esc(c.name) + '</b><button class="ghost" onclick="cpClose()">닫기</button></div>' +
+  d.innerHTML = '<div class="cvbar"><b>' + esc(c.name) + '</b><button onclick="cpShare(\'' + esc(c.id) + '\')">공유</button><button class="ghost" onclick="cpClose()">닫기</button></div>' +
     '<div class="cvbody"><div class="cvimg" id="cv_img">사진 불러오는 중…</div><div class="cvinfo">' + info + '</div></div>' +
     '<div class="cvact">' + (used ? '<button onclick="cpUsed(\'' + esc(c.id) + '\',false)">사용 취소(되돌리기)</button>' : '<button onclick="cpUsed(\'' + esc(c.id) + '\',true)">사용완료</button>') +
     '<button class="ghost" onclick="cpEdit(\'' + esc(c.id) + '\')">수정</button><button class="danger" onclick="cpDelete(\'' + esc(c.id) + '\')">삭제</button></div>';
@@ -1029,6 +1029,50 @@ function cpDelete(id) {
     .catch(function (e) { busy = false; toast('실패: ' + errMsg(e)); });
 }
 function cpEdit(id) { cpClose(); couponModal(id); }
+
+/* 공유: 휴대폰의 공유 창(카카오톡 등)으로 사진과 정보를 보내요. 상대가 이 앱을 안 써도 돼요 */
+function cpDataFile(src, name) {
+  var m = String(src).match(/^data:([^;]+);base64,(.*)$/);
+  if (!m) return null;
+  var bin = atob(m[2]), u = new Uint8Array(bin.length);
+  for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+  var ext = m[1] === 'image/png' ? 'png' : m[1] === 'image/webp' ? 'webp' : 'jpg';
+  return new File([u], name.replace(/[\\/:*?"<>|]/g, '').slice(0, 30) + '.' + ext, { type: m[1] });
+}
+function cpShareText(c) {
+  var t = ['🎟 ' + c.name];
+  if (c.value) t.push('내용: ' + c.value);
+  if (c.expire) t.push('유효기간: ' + c.expire + '까지');
+  if (c.code) t.push('번호: ' + c.code);
+  t.push('사용하시면 알려 주세요');
+  return t.join('\n');
+}
+function cpShare(id) {
+  var c = cpFind(id); if (!c) return;
+  var text = cpShareText(c), src = COUP_IMG[id];
+  if (c.hasImg && !src) { toast('사진을 불러오는 중이에요. 잠시 후 다시 눌러 주세요'); return; }
+  var file = src ? cpDataFile(src, c.name) : null, data = { title: c.name, text: text };
+  if (file && navigator.canShare && navigator.canShare({ files: [file] })) data.files = [file];
+  if (!navigator.share) {
+    cpCopyOld(text); toast('이 기기는 공유 창을 지원하지 않아요. 글만 복사했어요'); return;
+  }
+  navigator.share(data).then(function () { cpSharedNote(id); }).catch(function (e) {
+    if (e && e.name === 'AbortError') return;
+    toast('공유하지 못했어요: ' + errMsg(e));
+  });
+}
+function cpSharedNote(id) {
+  var c = cpFind(id); if (!c) return;
+  var d = new Date(), note = ('0' + (d.getMonth() + 1)).slice(-2) + '/' + ('0' + d.getDate()).slice(-2) + ' 공유';
+  var memo = c.memo && c.memo.indexOf(note) >= 0 ? c.memo : ((c.memo ? c.memo + ' · ' : '') + note).slice(-100);
+  var done = confirm('공유했어요.\n내가 더 쓰지 않는 쿠폰이면 「확인」을 눌러 사용완료로 옮기세요.\n(「취소」는 공유 기록만 남겨요)');
+  if (busy) return; busy = true;
+  call('saveCoupon', [{ id: id, name: c.name, value: c.value, expire: c.expire, code: c.code, memo: memo }])
+    .then(function () { return done ? call('setCouponUsed', [id, true]) : true; })
+    .then(function () { busy = false; cpClose(); toast(done ? '사용완료로 옮겼어요' : '공유 기록을 남겼어요'); reloadCoupons(); })
+    .catch(function (e) { busy = false; toast('실패: ' + errMsg(e)); });
+}
+
 
 function cpCompress(file) {
   return new Promise(function (resolve, reject) {
